@@ -1,0 +1,1 @@
+MONGODB_URL = "mongodb+srv://ngaudio0920:355875@user.au8gs.mongodb.net/?retryWrites=true&w=majority&appName=User"
