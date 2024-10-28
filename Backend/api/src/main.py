@@ -6,6 +6,7 @@ from starlette.middleware.cors import CORSMiddleware
 from bson import ObjectId
 from typing import Annotated, Optional, List
 from pydantic import BaseModel, BeforeValidator, Field, ConfigDict
+from auth.user_creation import verify_token
 
 
 app = FastAPI()
@@ -52,6 +53,7 @@ class GroupList(BaseModel):
 
 
 # Functions to List
+# Get
 @app.get("/users/", response_description="List of users", response_model=UserList,
     response_model_by_alias=False, )
 async def list_users():
@@ -65,6 +67,7 @@ async def liset_groups():
 
 
 # Functions to Create (users/groups)
+# Post
 @app.post("/user-add/", response_description="Add a new user", response_model=UserModel, 
           response_model_by_alias=False)
 async def addUser(user: UserModel = Body(...)):
@@ -77,6 +80,11 @@ async def addGroup(group: GroupModel = Body(...)):
     new_group = await groupCollection.insert_one(group.model_dump(by_alias=True, exclude={"id"}))
     created_group = await groupCollection.find_one({"_id" : new_group.inserted_id})
     return created_group
+
+@app.post("/verify-token/{token}", response_description="Verify token")
+async def verifyToken(token: str):
+    verification = verify_token(token)
+    return verification
 
 
 # Function to join group
