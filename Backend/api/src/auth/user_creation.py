@@ -17,9 +17,10 @@ def verify_token(token):
 
       #  ID token is valid. Get the user's Google Account ID from the decoded token.
       userid = idinfo['sub']
+      return userid
   except ValueError:
       # Invalid token
-      pass
+      return ""
   
 def add_user(data):
    # post info with email to the database
