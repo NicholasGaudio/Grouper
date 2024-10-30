@@ -1,39 +1,41 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin } from "@react-oauth/google";
 import Image from "next/image";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 
 export default function login() {
-    const router = useRouter();
-    const handleGoogleLogin = async (credentialResponse: any) => {
+  const router = useRouter();
 
-        try {
-          const response = await fetch('http://127.0.0.1:8000', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              id_token: credentialResponse.credential
-            })
-          });
-      
-          if (!response.ok) {
-            throw new Error('Authentication failed');
-          }
-      
-          router.push('/home'); // temporary until we find out our structure
-        } catch (error) {
-          console.error('Error during authentication:', error);
+  const handleGoogleLogin = async (credentialResponse: any) => {
+    const id_token = credentialResponse.credential;
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/verify-token/${id_token}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
-      };
+      );
+
+      // Response will contain json for username, email, new_user, etc.
+      if (!response.ok) {
+        throw new Error("Authentication failed");
+      }
+
+      router.push("/home"); // temporary until we find out our structure
+    } catch (error) {
+      console.error("Error during authentication:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -57,7 +59,9 @@ export default function login() {
         <main className="flex flex-col items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-md space-y-8">
             <div className="text-center">
-              <h1 className="text-4xl font-bold text-foreground">Welcome Back</h1>
+              <h1 className="text-4xl font-bold text-foreground">
+                Welcome Back
+              </h1>
             </div>
 
             <form className="space-y-6">
@@ -87,21 +91,23 @@ export default function login() {
 
               <div className="flex justify-center w-full">
                 <GoogleLogin
-                    onSuccess={handleGoogleLogin}
-                    onError={() => {
-                        console.log('Login Failed');
-                    }}
-                    useOneTap={false}
-                    width="600"
-                    theme="outline"
-                    size="large"
-                    shape="rectangular"
-                    />
+                  onSuccess={handleGoogleLogin}
+                  onError={() => {
+                    console.log("Login Failed");
+                  }}
+                  useOneTap={false}
+                  width="600"
+                  theme="outline"
+                  size="large"
+                  shape="rectangular"
+                />
               </div>
             </form>
 
             <div className="text-center text-sm">
-              <span className="text-muted-foreground">Don't have an account? </span>
+              <span className="text-muted-foreground">
+                Don't have an account?{" "}
+              </span>
               <Link href="/register" className="font-medium hover:underline">
                 Sign up
               </Link>
