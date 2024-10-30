@@ -1,28 +1,19 @@
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from env import CLIENT_ID
 
 def verify_token(token):
   try:
-      # Specify the CLIENT_ID of the app that accesses the backend:
       idinfo = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
 
-      # Or, if multiple clients access the backend server:
-      # idinfo = id_token.verify_oauth2_token(token, requests.Request())
-      # if idinfo['aud'] not in [CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]:
-      #     raise ValueError('Could not verify audience.')
-
-      # If the request specified a Google Workspace domain
-      # if idinfo['hd'] != DOMAIN_NAME:
-      #     raise ValueError('Wrong domain name.')
-
-      #  ID token is valid. Get the user's Google Account ID from the decoded token.
-      userid = idinfo['sub']
-      return userid
+      user_data = {
+        "username": idinfo['name'],
+        "groups": [],  # List any groups here
+        "email": idinfo['email']
+      }
+      
+      return user_data
   except ValueError:
       # Invalid token
-      return ""
+      return {}
   
-def add_user(data):
-   # post info with email to the database
-   # add me later
-   return True

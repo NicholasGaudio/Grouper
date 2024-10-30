@@ -7,7 +7,7 @@ from bson import ObjectId
 from typing import Annotated, Optional, List
 from pydantic import BaseModel, BeforeValidator, Field, ConfigDict
 from auth.user_creation import verify_token
-
+import requests
 
 app = FastAPI()
 
@@ -73,6 +73,9 @@ async def liset_groups():
 async def addUser(user: UserModel = Body(...)):
     new_user = await userCollection.insert_one(user.model_dump(by_alias=True, exclude={"id"}))
     created_user = await userCollection.find_one({"_id": new_user.inserted_id})
+
+    created_user["_id"] = str(created_user["_id"])  # Convert ObjectId to string
+
     return created_user
 
 @app.post("/group-add/", response_description="Add a new group", response_model=GroupModel, response_model_by_alias=False)
@@ -82,10 +85,21 @@ async def addGroup(group: GroupModel = Body(...)):
     return created_group
 
 @app.post("/verify-token/{token}", response_description="Verify token")
-async def verifyToken(token: str):
-    verification = verify_token(token)
-    return verification
+async def verifyToken(token: str): 
+    user_data = verify_token(token)
+    model = UserModel(**user_data)
 
+    if user_data:
+        # first, check if the user is already in the database via email
+        user = await userCollection.find_one({"email": user_data["email"]})
+
+        if not user:
+            await addUser(model)
+            user_data["new_user"] = True
+        else:
+            user_data["new_user"] = False
+        return user_data
+    raise HTTPException(status_code=400, detail="Invalid token or user data.")
 
 # Function to join group
 @app.put("/group-join/", response_description="Join a new group", response_model=UserModel)
