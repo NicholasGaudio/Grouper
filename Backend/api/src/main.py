@@ -31,6 +31,7 @@ app.add_middleware(
 class UserModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     username: str = Field(...)
+    invited: list = Field(...)
     groups: list = Field(...)
     email: str = Field(...)
 
@@ -103,15 +104,10 @@ async def verifyToken(token: str):
 
 # Function to join group
 @app.put("/group-join/", response_description="Join a new group", response_model=UserModel)
-async def join_group(user_id: str, group_name: str):
-    # Validate if user_id is valid ObjectId
-    if not ObjectId.is_valid(user_id):
-        raise HTTPException(status_code=400, detail="Invalid user_id format")
+async def join_group(email: str, group_name: str):
 
-    user_oid = ObjectId(user_id)
-    
-    # Find user by id
-    user = await userCollection.find_one({"_id": user_oid})
+    # Find user by email
+    user = await userCollection.find_one({"email": email})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -124,20 +120,24 @@ async def join_group(user_id: str, group_name: str):
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
 
-    # Add the new group to the user's groups
+    # Add the new group to the user's groups and get rid of it in invited
     await userCollection.update_one(
-        {"_id": user_oid},
-        {"$push": {"groups": group_name}}  
+        {"email": email},
+        {
+            "$push": {"groups": group_name},  # Add group to 'groups' list
+            "$pull": {"invited": group_name}  # Remove group from 'invited' list
+        }
     )
 
     # Add the user_id to the Groups DB
     await groupCollection.update_one(
         {"name": group_name},
-        {"$push": {"ids": user_id}}
+        {"$push": {"ids": str(user["_id"])}}
     )
 
     # Get updated user document
-    updated_user = await userCollection.find_one({"_id": user_oid})
+    updated_user = await userCollection.find_one({"email": email})
+
 
     # Check if the updated_user is None
     if not updated_user:
@@ -146,6 +146,34 @@ async def join_group(user_id: str, group_name: str):
     # Return the updated user by unpacking dictionary
     return UserModel(**updated_user)
 
+
+# Function to invite to a group
+@app.put("/group-invite", response_description="Invite user to a group", response_model=UserModel)
+async def invite_group(email: str, group_name: str):
+
+    # Find user by email
+    user = await userCollection.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Find group by name
+    group = await groupCollection.find_one({"name": group_name})
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    # Fail if user already invited
+    if group_name in user["invited"]:
+        raise HTTPException(status_code=400, detail="User already invited")
+    
+    # Update users invite list
+    await userCollection.update_one(
+        {"email": email},
+        {"$push": {"invited": group_name}}
+    )
+
+    updated_user = await userCollection.find_one({"email": email})
+
+    return UserModel(**updated_user)
 
 @app.get("/")
 async def root():
