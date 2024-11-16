@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ModeToggle } from "@/components/mode-toggle";
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,16 +16,53 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Navbar } from "@/components/navbar";
+import { Plus } from "lucide-react";
 
 const HomePage = () => {
   const [groupName, setGroupName] = useState('');
-  const [ids, setIds] = useState('');
+  const [currentId, setCurrentId] = useState('');
+  const [userGroups, setUserGroups] = useState([]);
+
+  const fetchUserGroups = async () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return;
+      
+      const user = JSON.parse(userStr);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups`);
+      const data = await response.json();
+      
+      const filteredGroups = data.groups.filter(group => 
+        group.ids.includes(user._id)
+      );
+      
+      console.log('Filtered Groups:', JSON.stringify(filteredGroups, null, 2));
+      setUserGroups(filteredGroups);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserGroups();
+  }, []);
 
   const handleSubmit = async () => {
     try {
-      const idsArray = ids.split(',').map(id => id.trim());
+      const userStr = localStorage.getItem('user');
+      const currentUser = userStr ? JSON.parse(userStr) : null;
       
-      const response = await fetch('http://127.0.0.1:8000/groups', {
+      const ids = currentId
+        .split(',')
+        .map(id => id.trim())
+        .filter(id => id !== '');
+        
+      if (currentUser?._id) {
+        ids.push(currentUser._id);
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/group-add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,12 +73,10 @@ const HomePage = () => {
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to create group');
-      }
-
       setGroupName('');
-      setIds('');
+      setCurrentId('');
+
+      await fetchUserGroups();
       
     } catch (error) {
       console.error('Error creating group:', error);
@@ -50,29 +85,27 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <div className="absolute inset-0 z-0">
-      </div>
-
-      <div className="absolute top-4 right-4 z-50">
-        <ModeToggle />
-      </div>
-
-      <div className="relative z-20">
+      <Navbar />
+      
+      <div className="relative z-20 pt-16">
         <main className="flex flex-col items-center justify-center min-h-screen p-4">
           <div className="text-center space-y-8">
             
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="lg" className="text-lg px-8 py-6">
-                  Create Group
+                <Button
+                  className="fixed bottom-6 right-6 w-14 h-14 rounded-full group hover:w-auto hover:px-6 transition-all duration-200 overflow-hidden flex items-center justify-center"
+                  size="icon"
+                >
+                  <Plus className="h-6 w-6 absolute group-hover:left-4 transition-all duration-200" />
+                  <span className="invisible opacity-0 group-hover:visible group-hover:opacity-100 ml-6 transition-none group-hover:transition-opacity duration-200 whitespace-nowrap">
+                    Create Group
+                  </span>
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>New Group</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Group stuff here
-                  </AlertDialogDescription>
                   <div className="space-y-4 mt-4">
                     <div className="space-y-2">
                       <Label htmlFor="groupName">Group Name</Label>
@@ -82,16 +115,6 @@ const HomePage = () => {
                         placeholder="Enter group name"
                         value={groupName}
                         onChange={(e) => setGroupName(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="ids">IDs (TEMPORARY)</Label>
-                      <Input
-                        id="ids"
-                        type="text"
-                        placeholder="IDs (COMMA SEPARATED NO SPACES)"
-                        value={ids}
-                        onChange={(e) => setIds(e.target.value)}
                       />
                     </div>
                   </div>
@@ -104,6 +127,23 @@ const HomePage = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+            <div className="mt-8 grid gap-4">
+              <h2 className="text-2xl font-bold">Your Groups</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {userGroups.map((group, index) => (
+                  <Link 
+                    key={`${group.id}-${index}`}
+                    href={`/home/${group.id}`}
+                    className="p-4 border rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <h3 className="font-semibold text-lg">{group.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {group.ids.length} members
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         </main>
       </div>
