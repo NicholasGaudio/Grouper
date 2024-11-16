@@ -1,0 +1,12 @@
+# Virtual Environment
+venv/
+env/
+.env/
+.venv/
+ENV/
+*.pyc
+__pycache__/
+.Python
+pip-log.txt
+Backend/api/src/__pycache__/main.cpython-312.pyc
+Backend/api/src/auth/__pycache__/user_creation.cpython-312.pyc

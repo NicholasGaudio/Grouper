@@ -1,12 +1,40 @@
 'use client';
 
 import React from 'react';
-import { ModeToggle } from "@/components/mode-toggle";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import Link from "next/link";
+import { GoogleLogin } from '@react-oauth/google';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
-export default function HomePage() {
+export default function LandingPage() {
+  const router = useRouter();
+
+  const handleGoogleLogin = async (credentialResponse: any) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/verify-token/${credentialResponse.credential}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Authentication failed");
+      }
+
+      const userData = await response.json();
+      localStorage.setItem('user', JSON.stringify(userData));
+      router.push("/home");
+      
+    } catch (error) {
+      console.error("Error during authentication:", error);
+      alert("Login failed. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="absolute inset-0 z-0">
@@ -21,30 +49,19 @@ export default function HomePage() {
         />
       </div>
 
-      <div className="absolute top-4 right-4 z-50">
-        <ModeToggle />
-      </div>
-
-      <div className="relative z-20">
-        <main className="flex flex-col items-center justify-center min-h-screen p-4">
-          <div className="text-center mb-8">
-            <h1 className="text-6xl font-bold text-foreground mb-4">
-              Grouper
-            </h1>
+      <div className="relative z-20 flex flex-col items-center justify-center min-h-screen">
+        <div className="w-full max-w-md p-8 space-y-8 bg-transparent rounded-lg shadow-lg">
+          <h1 className="text-4xl font-bold text-center">Welcome to Grouper</h1>
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleLogin}
+              onError={() => {
+                console.log('Login Failed');
+                alert("Login failed. Please try again.");
+              }}
+            />
           </div>
-          <div className="flex gap-4 mt-8">
-            <Link href="/register">
-              <Button size="lg">
-                Join Now
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="outline" size="lg">
-                Login
-              </Button>
-            </Link>
-          </div>
-        </main>
+        </div>
       </div>
     </div>
   );
