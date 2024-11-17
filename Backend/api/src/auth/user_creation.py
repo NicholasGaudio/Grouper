@@ -9,6 +9,7 @@ def verify_token(token):
       user_data = {
         "username": idinfo['name'],
         "groups": [],  # List any groups here
+        "invited": [],
         "email": idinfo['email']
       }
       
