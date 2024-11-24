@@ -35,7 +35,7 @@ machine:
 		npm run dev
 	D. Open webpage in browser*
 		http://localhost:3000
-		
+
 *Note: May soon change to https://localhost:3000
 
 
