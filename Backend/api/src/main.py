@@ -1,5 +1,3 @@
-# 172.20.1.197
-# uvicorn main:app --reload --host 172.20.1.197 --port 8000
 from fastapi import FastAPI, Body, HTTPException
 import motor.motor_asyncio
 from starlette.middleware.cors import CORSMiddleware
@@ -96,6 +94,46 @@ async def list_groups():
         
     return GroupList(groups=formatted_groups)
 
+@app.get("/{group_id}/users", response_description="User json info in a group")
+async def get_users_in_group(group_id: str):
+    # Find group by id
+    group = await groupCollection.find_one({"_id": group_id})
+    
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    # Retrieve the list of user IDs in the group
+    user_ids = group.get("ids", [])
+    
+    if not user_ids:
+        return {"message": "No users in this group"}
+    
+    # Fetch user details from the Users collection
+    users_cursor = userCollection.find({"_id": {"$in": [ObjectId(user_id) for user_id in user_ids]}})
+    
+    users = []
+    async for user in users_cursor:
+        user_data = {key: user[key] for key in user if key not in ["access_token", "refresh_token"]}
+        user_data["_id"] = str(user_data["_id"])
+        users.append(user_data)
+    
+    return {"group_id": group_id, "users": users}
+
+@app.get("/user/{user_id}", response_description="Single user json info")
+async def get_user(user_id: str):
+
+    user_id_obj = ObjectId(user_id)
+
+    user = await userCollection.find_one({"_id": user_id_obj})
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user["_id"] = str(user["_id"])
+
+    return user
+    
+
 
 # Functions to Create (users/groups)
 # Post
@@ -139,6 +177,7 @@ async def verifyToken(token: str):
         return user_data
     raise HTTPException(status_code=400, detail="Invalid token or user data.")
 
+#Put
 # Function to join group
 @app.put("/group-join/", response_description="Join a new group", response_model=UserModel)
 async def join_group(email: str, group_name: str):
@@ -219,6 +258,37 @@ async def invite_group(invite_data: InviteRequest):
     
     await inviteCollection.insert_one(new_invite)
     return {"message": "Invite sent successfully"}
+
+@app.put("/update/{user_id}", response_description="Update user info")
+async def update_user(user_id: str, user: UserModel):
+
+    try:
+        user_id_obj = ObjectId(user_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid user_id format")
+    
+    existing_user = await userCollection.find_one({"_id": user_id_obj})
+    if not existing_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    updated_data = user.dict(exclude_unset=True, by_alias=True)
+    
+    updated_data.pop('access_token', None)
+    updated_data.pop('refresh_token', None)
+
+    result = await userCollection.update_one(
+        {"_id": user_id_obj},
+        {"$set": updated_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found or no change in data")
+    
+    updated_user = await userCollection.find_one({"_id": user_id_obj})
+    
+    updated_user["_id"] = str(updated_user["_id"])
+
+    return updated_user
 
 @app.get("/")
 async def root():
