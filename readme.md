@@ -15,10 +15,7 @@ machine:
 		..\Grouper
 	B. Ensure Python environment is installed and properly configured
 	C. Install dependencies
-		pip install fastapi
-		pip install motor
-		pip install typing
-		pip install google-auth
+		pip install -r requirements.txt
 	D. Navigate to the Frontend directory
 		cd grouper
 	E. Install dependencies
@@ -36,8 +33,10 @@ machine:
 		cd grouper
 	C. Run webpage
 		npm run dev
-	D. Open webpage in browser
+	D. Open webpage in browser*
 		http://localhost:3000
+		
+*Note: May soon change to https://localhost:3000
 
 
 		
