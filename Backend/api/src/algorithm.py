@@ -1,4 +1,81 @@
-from datetime import datetime
+import datetime
+import os.path
+
+from env import CLIENT_ID, CLIENT_SECRET
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
+# Define the scope for read-only access to the Google Calendar API
+SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+
+def get_calendar_events(token: str):
+    token = TOKEN
+    """Returns the start and name of the next 10 events on the user's calendar."""
+    creds = None
+
+    # Load credentials from the provided token string
+    creds = Credentials.from_authorized_user_info((token), SCOPES)
+
+    # If credentials are expired, refresh them
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_config(
+                {
+                    "installed": {
+                        "client_id": CLIENT_ID,
+                        "client_secret": CLIENT_SECRET,
+                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                        "token_uri": "https://oauth2.googleapis.com/token",
+                    }
+                },
+                SCOPES,
+            )
+            creds = flow.run_local_server(port=0)
+
+    try:
+        # Build the Google Calendar service
+        service = build("calendar", "v3", credentials=creds)
+
+        # Call the Calendar API
+        now = datetime.datetime.utcnow().isoformat() + "Z"  # 'Z' indicates UTC time
+        events_result = (
+            service.events()
+            .list(
+                calendarId="primary",
+                timeMin=now,
+                maxResults=10,
+                singleEvents=True,
+                orderBy="startTime",
+            )
+            .execute()
+        )
+        events = events_result.get("items", [])
+
+        # Return the list of events
+        return [(event["start"].get("dateTime", event["start"].get("date")), event["summary"]) for event in events]
+
+    except HttpError as error:
+        print(f"An error occurred: {error}")
+        return []
+
+
+# Example usage
+if __name__ == "__main__":
+    token = input("Enter your token as a string: ")
+    events = get_calendar_events(token)
+
+    if not events:
+        print("No upcoming events found.")
+    else:
+        for start, summary in events:
+            print(start, summary)
+
+
 
 # Events Lists item
 # (start, end, owner), 

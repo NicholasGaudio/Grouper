@@ -1,22 +1,67 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { GoogleLogin } from '@react-oauth/google';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import React from "react";
+import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
+import { redirect, useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function LandingPage() {
-  const router = useRouter();
+  const REDIRECT_URI = "http://localhost:8000/auth/callback"; // Update this with your backend's redirect URI
+  const SCOPES = [
+    "email",
+    "profile",
+    "https://www.googleapis.com/auth/calendar.readonly",
+  ].join(" ");
 
-  const handleGoogleLogin = async (credentialResponse: any) => {
+  const authorizeURL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPES}&access_type=offline&prompt=consent`;
+
+  const handleLogin = () => {
+    window.location.href = authorizeURL; // Redirect to Google login
+  };
+
+  /*
+  const router = useRouter();
+  const handleSuccess = async (response: any) => {
+    console.log("Google Login Successful:", response);
+
+    // Extract the authorization code
+    const authorizationCode = response.code;
+
+    // Send the code to your backend
     try {
+      const backendResponse = await fetch(
+        "http://localhost:8000/exchange-code",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: authorizationCode }),
+        }
+      );
+
+      if (!backendResponse.ok) {
+        throw new Error("Failed to exchange authorization code");
+      }
+
+      const tokens = await backendResponse.json();
+      console.log("Tokens received from backend:", tokens);
+
+      // Save tokens or user info as needed
+      // Example: save tokens in state or context
+    } catch (error) {
+      console.error("Error exchanging authorization code:", error);
+    }
+  };
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (credentialResponse: any) => {
+      console.log(credentialResponse);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/verify-token/${credentialResponse.credential}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/verify-token`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify(credentialResponse),
         }
       );
 
@@ -26,15 +71,20 @@ export default function LandingPage() {
       }
 
       const userData = await response.json();
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem("user", JSON.stringify(userData));
       router.push("/home");
-      
-    } catch (error) {
-      console.error("Error during authentication:", error);
+    },
+    onError: () => {
+      console.error("Authentication failed");
       alert("Login failed. Please try again.");
-    }
-  };
-
+    },
+    scope:
+      "openid profile email https://www.googleapis.com/auth/calendar.readonly",
+    prompt: "consent",
+    accessType: "offline",
+    responseType: "code",
+  });
+  */
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="absolute inset-0 z-0">
@@ -53,13 +103,7 @@ export default function LandingPage() {
         <div className="w-full max-w-md p-8 space-y-8 bg-transparent rounded-lg shadow-lg">
           <h1 className="text-4xl font-bold text-center">Welcome to Grouper</h1>
           <div className="flex justify-center">
-            <GoogleLogin
-              onSuccess={handleGoogleLogin}
-              onError={() => {
-                console.log('Login Failed');
-                alert("Login failed. Please try again.");
-              }}
-            />
+            <button onClick={handleLogin}>Login with Google</button>
           </div>
         </div>
       </div>

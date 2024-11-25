@@ -1,12 +1,16 @@
 from fastapi import FastAPI, Body, HTTPException
+from fastapi.responses import RedirectResponse
+from fastapi import Request as FastAPI_Request
 import motor.motor_asyncio
 from starlette.middleware.cors import CORSMiddleware
 from bson import ObjectId
 from typing import Annotated, Optional, List
 from pydantic import BaseModel, BeforeValidator, Field, ConfigDict
-from auth.user_creation import verify_token
+from auth.user_creation import handle_id_token
+from algorithm import *
 import requests
 import json
+import httpx
 
 app = FastAPI()
 
@@ -32,6 +36,9 @@ class UserModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     username: str = Field(...)
     email: str = Field(...)
+    profile_picture: str = Field(...)
+    access_token: str = Field(...)
+    refresh_token: str = Field(...)
 
     class Config:
         json_encoders = {
@@ -159,23 +166,58 @@ class JSONEncoder(json.JSONEncoder):
             return str(o)
         return super().default(o)
 
-@app.post("/verify-token/{token}", response_description="Verify token")
-async def verifyToken(token: str): 
-    user_data = verify_token(token)
-    model = UserModel(**user_data)
+# Endpoint that handles the redirect from Google
+@app.get("/auth/callback", response_description="Callback")
+async def auth_callback(request: FastAPI_Request):
+    code = request.query_params.get("code")
 
-    if user_data:
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing code parameter")
+
+    # Exchange the authorization code for a token
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "redirect_uri": "http://localhost:8000/auth/callback",
+                "grant_type": "authorization_code",
+            },
+        )    
+
+    # Response data with access_token, refresh_token, id_token
+    response_data = response.json()
+
+    # Retrieve public user info that can be returned back to the front end
+    public_user_info = handle_id_token(response_data["id_token"])
+
+    # Retrieve private user info that is stored but not returned to the front end
+    if "access_token" not in response_data or "refresh_token" not in response_data:
+        raise HTTPException(status_code=500, detail="Failed to retrieve tokens from Google")
+    
+    all_user_info = public_user_info
+    all_user_info["access_token"] = response_data["access_token"]
+    all_user_info["refresh_token"] = response_data["refresh_token"]
+
+    #TODO -- ALWAYS update the data when logging in
+    #TODO -- Encrypt tokens
+    model = UserModel(**all_user_info)
+
+    if public_user_info:
         # first, check if the user is already in the database via email
-        user = await userCollection.find_one({"email": user_data["email"]})
-
+        user = await userCollection.find_one({"email": public_user_info["email"]})
+        print(user)
         if not user:
-            await addUser(model)
-            user_data["new_user"] = True
+            user = await addUser(model)
+
+            public_user_info["new_user"] = True
         else:
-            user_data["_id"] = str(user["_id"])
-            user_data["new_user"] = False
-        return user_data
-    raise HTTPException(status_code=400, detail="Invalid token or user data.")
+            #TODO PATCH model here!!!!!!!!!!!!
+            public_user_info["new_user"] = False
+
+    return RedirectResponse(url=f"https://localhost:3000/home?uid={str(user['_id'])}")
 
 #Put
 # Function to join group
@@ -292,7 +334,7 @@ async def update_user(user_id: str, user: UserModel):
 
 @app.get("/")
 async def root():
-    return {"Hello Grouper"}
+    return {"Hello Grouper. I love Grouper..."}
 
 def serialize_doc(doc):
     """Convert MongoDB document to serializable dictionary"""
