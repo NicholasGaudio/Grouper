@@ -31,12 +31,10 @@ const HomePage = () => {
       if (!userStr) return;
       
       const user = JSON.parse(userStr);
-      console.log('Fetching groups for user ID:', user._id);
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/${user._id}`);
       const data = await response.json();
       
-      console.log('Received groups data:', data);
       setUserGroups(data.groups);
     } catch (error) {
       console.error('Error fetching groups:', error);

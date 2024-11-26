@@ -79,9 +79,9 @@ async def list_users():
     users = await userCollection.find().to_list(1000)
     return UserList(users=users)
 
-@app.get("/groups/{user_id}", response_description="List of groups", response_model=GroupList, response_model_by_alias=False)
-async def list_groups(user_id: str):
-    groups = await groupCollection.find({"ids": user_id}).to_list(1000)
+@app.get("/groups/", response_description="List of groups", response_model=GroupList, response_model_by_alias=False)
+async def list_groups():
+    groups = await groupCollection.find().to_list(1000)
     
     formatted_groups = []
     for group in groups:
@@ -96,6 +96,22 @@ async def list_groups(user_id: str):
         
     return GroupList(groups=formatted_groups)
 
+@app.get("/groups/{user_id}", response_description="List of user's groups", response_model=GroupList, response_model_by_alias=False)
+async def list_user_groups(user_id: str):
+    groups = await groupCollection.find({"ids": user_id}).to_list(1000)
+    
+    formatted_groups = []
+    for group in groups:
+        group["_id"] = str(group["_id"])
+        
+        if isinstance(group.get("ids"), str):
+            group["ids"] = group["ids"].split(",") if group["ids"] else []
+        elif group.get("ids") is None:
+            group["ids"] = []
+            
+        formatted_groups.append(group)
+        
+    return GroupList(groups=formatted_groups)
 
 # Functions to Create (users/groups)
 # Post

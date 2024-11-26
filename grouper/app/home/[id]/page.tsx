@@ -33,13 +33,22 @@ export default function GroupPage() {
         if (!userStr) return;
         const user = JSON.parse(userStr);
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups`);
-        const data = await response.json();
-        const foundGroup = data.groups.find(g => g.id === params.id);
-        setGroup(foundGroup);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/${user._id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch groups');
+        }
         
-        setIsCreator(foundGroup?.ids[0] === user._id);
-        setEditName(foundGroup?.name || '');
+        const data = await response.json();
+        if (!data.groups) {
+          throw new Error('No groups data received');
+        }
+
+        const foundGroup = data.groups.find(g => g.id === params.id);
+        if (foundGroup) {
+          setGroup(foundGroup);
+          setIsCreator(foundGroup.ids[0] === user._id);
+          setEditName(foundGroup.name || '');
+        }
       } catch (error) {
         console.error('Error fetching group:', error);
       }
