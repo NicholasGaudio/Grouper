@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -5,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirect, useRouter } from "next/navigation";
+=======
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+>>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
 import Link from "next/link";
 import {
   AlertDialog,
@@ -21,6 +30,7 @@ import { Navbar } from "@/components/navbar";
 import { Plus } from "lucide-react";
 
 const HomePage = () => {
+<<<<<<< HEAD
   const [groupName, setGroupName] = useState("");
   const [currentId, setCurrentId] = useState("");
   const [userGroups, setUserGroups] = useState([]);
@@ -79,16 +89,43 @@ const HomePage = () => {
       setUserGroups(filteredGroups);
     } catch (error) {
       console.error("Error fetching groups:", error);
+=======
+  const [groupName, setGroupName] = useState('');
+  const [currentId, setCurrentId] = useState('');
+  const [userGroups, setUserGroups] = useState([]);
+
+  const fetchUserGroups = async () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return;
+      
+      const user = JSON.parse(userStr);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups`);
+      const data = await response.json();
+      
+      const filteredGroups = data.groups.filter(group => 
+        group.ids.includes(user._id)
+      );
+      
+      console.log('Filtered Groups:', JSON.stringify(filteredGroups, null, 2));
+      setUserGroups(filteredGroups);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+>>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
     }
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     fetchUserIntoLocalStorage();
+=======
+>>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
     fetchUserGroups();
   }, []);
 
   const handleSubmit = async () => {
     try {
+<<<<<<< HEAD
       const userStr = localStorage.getItem("user");
       const currentUser = userStr ? JSON.parse(userStr) : null;
 
@@ -97,10 +134,21 @@ const HomePage = () => {
         .map((id) => id.trim())
         .filter((id) => id !== "");
 
+=======
+      const userStr = localStorage.getItem('user');
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+      
+      const ids = currentId
+        .split(',')
+        .map(id => id.trim())
+        .filter(id => id !== '');
+        
+>>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
       if (currentUser?._id) {
         ids.push(currentUser._id);
       }
 
+<<<<<<< HEAD
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/group-add`,
         {
@@ -121,16 +169,44 @@ const HomePage = () => {
       await fetchUserGroups();
     } catch (error) {
       console.error("Error creating group:", error);
+=======
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/group-add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: groupName,
+          ids: ids
+        })
+      });
+
+      setGroupName('');
+      setCurrentId('');
+
+      await fetchUserGroups();
+      
+    } catch (error) {
+      console.error('Error creating group:', error);
+>>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
     }
   };
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       <Navbar />
+<<<<<<< HEAD
 
       <div className="relative z-20 pt-16">
         <main className="flex flex-col items-center justify-center min-h-screen p-4">
           <div className="text-center space-y-8">
+=======
+      
+      <div className="relative z-20 pt-16">
+        <main className="flex flex-col items-center justify-center min-h-screen p-4">
+          <div className="text-center space-y-8">
+            
+>>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -171,7 +247,11 @@ const HomePage = () => {
               <h2 className="text-2xl font-bold">Your Groups</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {userGroups.map((group, index) => (
+<<<<<<< HEAD
                   <Link
+=======
+                  <Link 
+>>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
                     key={`${group.id}-${index}`}
                     href={`/home/${group.id}`}
                     className="p-4 border rounded-lg hover:bg-accent transition-colors"
@@ -191,4 +271,8 @@ const HomePage = () => {
   );
 };
 
+<<<<<<< HEAD
 export default HomePage;
+=======
+export default HomePage;
+>>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
