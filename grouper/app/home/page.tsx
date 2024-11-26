@@ -27,11 +27,29 @@ const HomePage = () => {
 
   const router = useRouter();
 
-  const storeUserFromQuery = () => {
+  const fetchUserIntoLocalStorage = async () => {
     const params = new URLSearchParams(window.location.search);
     const uid = params.get("uid"); // Extract 'uid' from the query string
+
     if (uid) {
-      localStorage.setItem("uid", JSON.stringify({ _id: uid })); // Store user data in localStorage
+      // Store user data in localStorage
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/user/${uid}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        router.push("/home");
+      }
+
+      const userData = await response.json();
+      localStorage.setItem("user", JSON.stringify(userData));
+      console.log(userData);
     } else {
       router.push("/home");
     }
@@ -43,14 +61,21 @@ const HomePage = () => {
       if (!userStr) return;
 
       const user = JSON.parse(userStr);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups`);
-      const data = await response.json();
-
-      const filteredGroups = data.groups.filter((group) =>
-        group.ids.includes(user._id)
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/groupswith/${user._id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
 
-      console.log("Filtered Groups:", JSON.stringify(filteredGroups, null, 2));
+      if (!response.ok) {
+        console.error("Error fetching groups user is in");
+      }
+
+      const filteredGroups = await response.json();
       setUserGroups(filteredGroups);
     } catch (error) {
       console.error("Error fetching groups:", error);
@@ -58,6 +83,7 @@ const HomePage = () => {
   };
 
   useEffect(() => {
+    fetchUserIntoLocalStorage();
     fetchUserGroups();
   }, []);
 

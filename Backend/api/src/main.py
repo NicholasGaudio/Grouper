@@ -7,6 +7,7 @@ from bson import ObjectId
 from typing import Annotated, Optional, List
 from pydantic import BaseModel, BeforeValidator, Field, ConfigDict
 from auth.user_creation import handle_id_token
+from datetime import datetime, timedelta
 from algorithm import *
 import requests
 import json
@@ -104,6 +105,7 @@ async def list_groups():
 @app.get("/{group_id}/users", response_description="User json info in a group")
 async def get_users_in_group(group_id: str):
     # Find group by id
+    group_id = ObjectId(group_id)
     group = await groupCollection.find_one({"_id": group_id})
     
     if not group:
@@ -126,9 +128,33 @@ async def get_users_in_group(group_id: str):
     
     return {"group_id": group_id, "users": users}
 
+async def get_users_in_group_with_keys(group_id: str):
+    # Find group by id
+    group_id = ObjectId(group_id)
+    group = await groupCollection.find_one({"_id": group_id})
+    
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    # Retrieve the list of user IDs in the group
+    user_ids = group.get("ids", [])
+    
+    if not user_ids:
+        return {"message": "No users in this group"}
+    
+    # Fetch user details from the Users collection
+    users_cursor = userCollection.find({"_id": {"$in": [ObjectId(user_id) for user_id in user_ids]}})
+    
+    users = []
+    async for user in users_cursor:
+        user_data = {key: user[key] for key in user}
+        user_data["_id"] = str(user_data["_id"])
+        users.append(user_data)
+    
+    return {"group_id": group_id, "users": users}
+
 @app.get("/user/{user_id}", response_description="Single user json info")
 async def get_user(user_id: str):
-
     user_id_obj = ObjectId(user_id)
 
     user = await userCollection.find_one({"_id": user_id_obj})
@@ -138,9 +164,29 @@ async def get_user(user_id: str):
     
     user["_id"] = str(user["_id"])
 
-    return user
-    
+    # Don't return the secret stuff
+    del user["refresh_token"]
+    del user["access_token"]
 
+    return user
+
+@app.get("/groupswith/{user_id}", response_description="Groups that a user is in")
+async def get_groups_with_user(user_id: str):
+    groups_cursor = groupCollection.find({"ids": {"$in": [user_id]}})
+    groups = await groups_cursor.to_list(length=None) 
+
+    # convert IDs to strings
+    for group in groups:
+        group["_id"] = str(group["_id"])
+        group["ids"] = [str(user) for user in group["ids"]]
+
+    return groups
+
+@app.get("/group/mergedcalendar/{group_id}", response_description="Returns JSON regarding the merged calendar")
+async def get_merged_calendar(group_id: str):
+    users = await get_users_in_group_with_keys(group_id)
+    users = users["users"]
+    return await algorithm_process_users(users)
 
 # Functions to Create (users/groups)
 # Post
@@ -201,7 +247,6 @@ async def auth_callback(request: FastAPI_Request):
     all_user_info["access_token"] = response_data["access_token"]
     all_user_info["refresh_token"] = response_data["refresh_token"]
 
-    #TODO -- ALWAYS update the data when logging in
     #TODO -- Encrypt tokens
     model = UserModel(**all_user_info)
 
@@ -214,7 +259,7 @@ async def auth_callback(request: FastAPI_Request):
 
             public_user_info["new_user"] = True
         else:
-            #TODO PATCH model here!!!!!!!!!!!!
+            update_user(user["_id"], model)
             public_user_info["new_user"] = False
 
     return RedirectResponse(url=f"https://localhost:3000/home?uid={str(user['_id'])}")
@@ -255,7 +300,6 @@ async def join_group(email: str, group_name: str):
 
     # Get updated user document
     updated_user = await userCollection.find_one({"email": email})
-
 
     # Check if the updated_user is None
     if not updated_user:
