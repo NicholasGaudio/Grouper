@@ -94,6 +94,23 @@ async def list_groups():
         
     return GroupList(groups=formatted_groups)
 
+@app.get("/groups/{user_id}", response_description="List of user's groups", response_model=GroupList, response_model_by_alias=False)
+async def list_user_groups(user_id: str):
+    groups = await groupCollection.find({"ids": user_id}).to_list(1000)
+
+    formatted_groups = []
+    for group in groups:
+        group["_id"] = str(group["_id"])
+
+        if isinstance(group.get("ids"), str):
+            group["ids"] = group["ids"].split(",") if group["ids"] else []
+        elif group.get("ids") is None:
+            group["ids"] = []
+
+        formatted_groups.append(group)
+
+    return GroupList(groups=formatted_groups)
+
 @app.get("/{group_id}/users", response_description="User json info in a group")
 async def get_users_in_group(group_id: str):
     # Find group by id
@@ -133,8 +150,6 @@ async def get_user(user_id: str):
 
     return user
     
-
-
 # Functions to Create (users/groups)
 # Post
 @app.post("/user-add/", response_description="Add a new user", response_model=UserModel, 
@@ -362,3 +377,18 @@ async def leave_group(group_id: str, user_id: str):
             raise HTTPException(status_code=404, detail="Group not found or user not in group")
             
         return {"message": "Successfully left group"}
+
+@app.put("/groups/{group_id}/update")
+async def update_group(group_id: str, group_data: dict):
+    try:
+        result = await groupCollection.update_one(
+            {"_id": ObjectId(group_id)},
+            {"$set": group_data}
+        )
+
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Group not found")
+
+        return {"message": "Group updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
