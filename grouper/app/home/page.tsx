@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Navbar } from "@/components/navbar";
 import { Plus } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const HomePage = () => {
   const [groupName, setGroupName] = useState("");
@@ -61,27 +62,16 @@ const HomePage = () => {
       if (!userStr) return;
 
       const user = JSON.parse(userStr);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/groupswith/${user._id}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
 
-      if (!response.ok) {
-        console.error("Error fetching groups user is in");
-      }
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/${user._id}`);
+      const data = await response.json();
 
-      const filteredGroups = await response.json();
-      setUserGroups(filteredGroups);
+      setUserGroups(data.groups);
+
     } catch (error) {
       console.error("Error fetching groups:", error);
     }
   };
-
   useEffect(() => {
     fetchUserIntoLocalStorage();
     fetchUserGroups();
@@ -125,12 +115,36 @@ const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="h-screen bg-background relative overflow-hidden">
       <Navbar />
 
-      <div className="relative z-20 pt-16">
-        <main className="flex flex-col items-center justify-center min-h-screen p-4">
-          <div className="text-center space-y-8">
+      <div className="relative z-20 h-[calc(100vh-3.5rem)] mt-14">
+        <ScrollArea className="h-full px-8 py-6">
+          <div className="max-w-[100vw]">
+            <div className="flex flex-wrap gap-8">
+              {userGroups.map((group, index) => (
+                <Link 
+                  key={`${group.id}-${index}`}
+                  href={`/home/${group.id}`}
+                  className="group w-72"
+                >
+                  <div className="w-full mb-3">
+                    <div className="aspect-square w-full border rounded-xl hover:bg-accent/50 transition-colors duration-200">
+                    </div>
+
+                    <div className="mt-3">
+                      <h3 className="font-medium text-lg group-hover:text-primary transition-colors">
+                        {group.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {group.ids.length} {group.ids.length === 1 ? 'member' : 'members'}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -167,25 +181,8 @@ const HomePage = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <div className="mt-8 grid gap-4">
-              <h2 className="text-2xl font-bold">Your Groups</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {userGroups.map((group, index) => (
-                  <Link
-                    key={`${group.id}-${index}`}
-                    href={`/home/${group.id}`}
-                    className="p-4 border rounded-lg hover:bg-accent transition-colors"
-                  >
-                    <h3 className="font-semibold text-lg">{group.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {group.ids.length} members
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            </div>
           </div>
-        </main>
+        </ScrollArea>
       </div>
     </div>
   );
