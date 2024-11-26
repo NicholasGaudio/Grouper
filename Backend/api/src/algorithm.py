@@ -1,18 +1,13 @@
-<<<<<<< HEAD
 import datetime
 import os.path
 
 from env import CLIENT_ID, CLIENT_SECRET
 import requests
 from datetime import datetime, timedelta
-=======
-from datetime import datetime
->>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
 
 # Events Lists item
 # (start, end, owner), 
 # Convert strings to datetime objects
-<<<<<<< HEAD
 def convert_event_format(event, name):
     # Parse the start and end times
     start_str = event["start"]["dateTime"]
@@ -24,11 +19,6 @@ def convert_event_format(event, name):
     
     # Return the tuple in the desired format
     return (start.strftime('%Y-%m-%d %H:%M'), end.strftime('%Y-%m-%d %H:%M'), name)
-=======
-def parse_event(event):
-    start, end = event
-    return (datetime.strptime(start, '%Y-%m-%d %H:%M'), datetime.strptime(end, '%Y-%m-%d %H:%M'))
->>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
 
 # Find Availability Timeline
 # Returns a list of Availabilities:
@@ -38,18 +28,10 @@ def find_availability_timeline(events_lists):
     total_people = len(events_lists)
 
     # Add all events start and end times to the time_points list
-<<<<<<< HEAD
     for events in events_lists: # For each person's list
         for event in events: # For each event in each person's list
             time_points.append((event[0], 'start', event[2]))
             time_points.append((event[1], 'end', event[2]))
-=======
-    for events in events_lists:
-        for event in events:
-            start, end, owner = parse_event(event), owner
-            time_points.append((start, 'start', owner))
-            time_points.append((end, 'end', owner))
->>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
 
     # Sort time points by time
     time_points.sort(key=lambda x: x[0])
@@ -62,11 +44,7 @@ def find_availability_timeline(events_lists):
 
     for (time, event_type, owner) in time_points:
         if time != previous_event_time:
-<<<<<<< HEAD
             availability.append({"time": time, "busy_count": busy_count, "names_of_people_who_are_busy": names_of_people_who_are_busy.copy()})
-=======
-            availability.append((time, busy_count, names_of_people_who_are_busy))
->>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
 
         if event_type == 'start':
                 busy_count += 1
@@ -77,7 +55,6 @@ def find_availability_timeline(events_lists):
 
         previous_event_time = time
 
-<<<<<<< HEAD
     return {"total_people": total_people, "availability": availability}
 
 # Takes in a User (json)
@@ -157,6 +134,3 @@ async def algorithm_process_users(users):
         events_lists.append(personal_events)
     
     return find_availability_timeline(events_lists)
-=======
-    return availability
->>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2

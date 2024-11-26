@@ -117,10 +117,7 @@ async def list_groups():
 @app.get("/{group_id}/users", response_description="User json info in a group")
 async def get_users_in_group(group_id: str):
     # Find group by id
-<<<<<<< HEAD
     group_id = ObjectId(group_id)
-=======
->>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
     group = await groupCollection.find_one({"_id": group_id})
     
     if not group:
@@ -143,7 +140,6 @@ async def get_users_in_group(group_id: str):
     
     return {"group_id": group_id, "users": users}
 
-<<<<<<< HEAD
 async def get_users_in_group_with_keys(group_id: str):
     # Find group by id
     group_id = ObjectId(group_id)
@@ -171,11 +167,6 @@ async def get_users_in_group_with_keys(group_id: str):
 
 @app.get("/user/{user_id}", response_description="Single user json info")
 async def get_user(user_id: str):
-=======
-@app.get("/user/{user_id}", response_description="Single user json info")
-async def get_user(user_id: str):
-
->>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
     user_id_obj = ObjectId(user_id)
 
     user = await userCollection.find_one({"_id": user_id_obj})
@@ -185,7 +176,6 @@ async def get_user(user_id: str):
     
     user["_id"] = str(user["_id"])
 
-<<<<<<< HEAD
     # Don't return the secret stuff
     del user["refresh_token"]
     del user["access_token"]
@@ -209,11 +199,6 @@ async def get_merged_calendar(group_id: str):
     users = await get_users_in_group_with_keys(group_id)
     users = users["users"]
     return await algorithm_process_users(users)
-=======
-    return user
-    
-
->>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
 
 # Functions to Create (users/groups)
 # Post
@@ -239,7 +224,6 @@ class JSONEncoder(json.JSONEncoder):
             return str(o)
         return super().default(o)
 
-<<<<<<< HEAD
 # Endpoint that handles the redirect from Google
 @app.get("/auth/callback", response_description="Callback")
 async def auth_callback(request: FastAPI_Request):
@@ -291,25 +275,6 @@ async def auth_callback(request: FastAPI_Request):
             public_user_info["new_user"] = False
 
     return RedirectResponse(url=f"https://localhost:3000/home?uid={str(user['_id'])}")
-=======
-@app.post("/verify-token/{token}", response_description="Verify token")
-async def verifyToken(token: str): 
-    user_data = verify_token(token)
-    model = UserModel(**user_data)
-
-    if user_data:
-        # first, check if the user is already in the database via email
-        user = await userCollection.find_one({"email": user_data["email"]})
-
-        if not user:
-            await addUser(model)
-            user_data["new_user"] = True
-        else:
-            user_data["_id"] = str(user["_id"])
-            user_data["new_user"] = False
-        return user_data
-    raise HTTPException(status_code=400, detail="Invalid token or user data.")
->>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
 
 #Put
 # Function to join group
@@ -348,10 +313,6 @@ async def join_group(email: str, group_name: str):
     # Get updated user document
     updated_user = await userCollection.find_one({"email": email})
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
     # Check if the updated_user is None
     if not updated_user:
         raise HTTPException(status_code=404, detail="Updated user not found")
@@ -429,11 +390,7 @@ async def update_user(user_id: str, user: UserModel):
 
 @app.get("/")
 async def root():
-<<<<<<< HEAD
     return {"Hello Grouper. I love Grouper..."}
-=======
-    return {"Hello Grouper"}
->>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
 
 def serialize_doc(doc):
     """Convert MongoDB document to serializable dictionary"""
