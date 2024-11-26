@@ -1,38 +1,22 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { GoogleLogin } from '@react-oauth/google';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import React from "react";
+import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
+import { redirect, useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function LandingPage() {
-  const router = useRouter();
+  const REDIRECT_URI = "http://localhost:8000/auth/callback"; // Update this with your backend's redirect URI
+  const SCOPES = [
+    "email",
+    "profile",
+    "https://www.googleapis.com/auth/calendar.readonly",
+  ].join(" ");
 
-  const handleGoogleLogin = async (credentialResponse: any) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/verify-token/${credentialResponse.credential}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+  const authorizeURL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPES}&access_type=offline&prompt=consent`;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Authentication failed");
-      }
-
-      const userData = await response.json();
-      localStorage.setItem('user', JSON.stringify(userData));
-      router.push("/home");
-      
-    } catch (error) {
-      console.error("Error during authentication:", error);
-      alert("Login failed. Please try again.");
-    }
+  const handleLogin = () => {
+    window.location.href = authorizeURL; // Redirect to Google login
   };
 
   return (
@@ -53,13 +37,7 @@ export default function LandingPage() {
         <div className="w-full max-w-md p-8 space-y-8 bg-transparent rounded-lg shadow-lg">
           <h1 className="text-4xl font-bold text-center">Welcome to Grouper</h1>
           <div className="flex justify-center">
-            <GoogleLogin
-              onSuccess={handleGoogleLogin}
-              onError={() => {
-                console.log('Login Failed');
-                alert("Login failed. Please try again.");
-              }}
-            />
+            <button onClick={handleLogin}>Login with Google</button>
           </div>
         </div>
       </div>

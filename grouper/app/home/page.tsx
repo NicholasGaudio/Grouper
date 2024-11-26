@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { redirect, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -21,13 +22,43 @@ import { Plus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const HomePage = () => {
-  const [groupName, setGroupName] = useState('');
-  const [currentId, setCurrentId] = useState('');
+  const [groupName, setGroupName] = useState("");
+  const [currentId, setCurrentId] = useState("");
   const [userGroups, setUserGroups] = useState([]);
+
+  const router = useRouter();
+
+  const fetchUserIntoLocalStorage = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const uid = params.get("uid"); // Extract 'uid' from the query string
+
+    if (uid) {
+      // Store user data in localStorage
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/user/${uid}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        router.push("/home");
+      }
+
+      const userData = await response.json();
+      localStorage.setItem("user", JSON.stringify(userData));
+      console.log(userData);
+    } else {
+      router.push("/home");
+    }
+  };
 
   const fetchUserGroups = async () => {
     try {
-      const userStr = localStorage.getItem('user');
+      const userStr = localStorage.getItem("user");
       if (!userStr) return;
 
       const user = JSON.parse(userStr);
@@ -36,46 +67,50 @@ const HomePage = () => {
       const data = await response.json();
 
       setUserGroups(data.groups);
+
     } catch (error) {
-      console.error('Error fetching groups:', error);
+      console.error("Error fetching groups:", error);
     }
   };
   useEffect(() => {
+    fetchUserIntoLocalStorage();
     fetchUserGroups();
   }, []);
 
   const handleSubmit = async () => {
     try {
-      const userStr = localStorage.getItem('user');
+      const userStr = localStorage.getItem("user");
       const currentUser = userStr ? JSON.parse(userStr) : null;
-      
+
       const ids = currentId
-        .split(',')
-        .map(id => id.trim())
-        .filter(id => id !== '');
-        
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => id !== "");
+
       if (currentUser?._id) {
         ids.push(currentUser._id);
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/group-add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: groupName,
-          ids: ids
-        })
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/group-add`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: groupName,
+            ids: ids,
+          }),
+        }
+      );
 
-      setGroupName('');
-      setCurrentId('');
+      setGroupName("");
+      setCurrentId("");
 
       await fetchUserGroups();
-      
     } catch (error) {
-      console.error('Error creating group:', error);
+      console.error("Error creating group:", error);
     }
   };
 
@@ -152,4 +187,5 @@ const HomePage = () => {
     </div>
   );
 };
+
 export default HomePage;
