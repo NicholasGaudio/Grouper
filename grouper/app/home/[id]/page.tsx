@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from "@/components/navbar";
-import { Trash2, UserPlus, LogOut } from "lucide-react";
+import { Trash2, UserPlus, LogOut, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +24,7 @@ export default function GroupPage() {
   const [group, setGroup] = useState(null);
   const [inviteId, setInviteId] = useState('');
   const [isCreator, setIsCreator] = useState(false);
+  const [editName, setEditName] = useState('');
 
   useEffect(() => {
     const fetchGroup = async () => {
@@ -38,6 +39,7 @@ export default function GroupPage() {
         setGroup(foundGroup);
         
         setIsCreator(foundGroup?.ids[0] === user._id);
+        setEditName(foundGroup?.name || '');
       } catch (error) {
         console.error('Error fetching group:', error);
       }
@@ -106,6 +108,33 @@ export default function GroupPage() {
     }
   };
 
+  const handleEdit = async () => {
+    try {
+      if (!editName.trim()) return;
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/groups/${params.id}/update`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: editName.trim()
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to update group');
+      }
+
+      setGroup(prev => ({ ...prev, name: editName.trim() }));
+    } catch (error) {
+      console.error('Error updating group:', error);
+    }
+  };
+
   if (!group) return <div>Loading...</div>;
 
   return (
@@ -146,6 +175,46 @@ export default function GroupPage() {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+
+              {isCreator && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="[&_svg]:text-yellow-500"
+                    >
+                      <Pencil className="h-5 w-5" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Edit Group</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Placeholder.
+                      </AlertDialogDescription>
+                      <div className="mt-4 space-y-4">
+                        <Input
+                          placeholder="Group Name"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                        />
+                      </div>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel onClick={() => setEditName(group?.name || '')}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleEdit}
+                        disabled={!editName.trim() || editName === group?.name}
+                      >
+                        Save Changes
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
 
               {isCreator && (
                 <AlertDialog>

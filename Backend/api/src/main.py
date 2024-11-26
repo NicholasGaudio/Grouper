@@ -79,9 +79,9 @@ async def list_users():
     users = await userCollection.find().to_list(1000)
     return UserList(users=users)
 
-@app.get("/groups/", response_description="List of groups", response_model=GroupList, response_model_by_alias=False,)
-async def list_groups():
-    groups = await groupCollection.find().to_list(1000)
+@app.get("/groups/{user_id}", response_description="List of groups", response_model=GroupList, response_model_by_alias=False)
+async def list_groups(user_id: str):
+    groups = await groupCollection.find({"ids": user_id}).to_list(1000)
     
     formatted_groups = []
     for group in groups:
@@ -292,3 +292,18 @@ async def leave_group(group_id: str, user_id: str):
             raise HTTPException(status_code=404, detail="Group not found or user not in group")
             
         return {"message": "Successfully left group"}
+
+@app.put("/groups/{group_id}/update")
+async def update_group(group_id: str, group_data: dict):
+    try:
+        result = await groupCollection.update_one(
+            {"_id": ObjectId(group_id)},
+            {"$set": group_data}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Group not found")
+            
+        return {"message": "Group updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

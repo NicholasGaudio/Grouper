@@ -69,7 +69,7 @@ export function InvitesMenu() {
       const updatedInvites = invites.filter(invite => invite.id !== inviteId);
       setInvites(updatedInvites);
 
-      const groupsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups`);
+      const groupsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/${userId}`);
       if (groupsResponse.ok) {
         const groupsData = await groupsResponse.json();
         const userStr = localStorage.getItem('user');
