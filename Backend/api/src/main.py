@@ -1,12 +1,17 @@
 from fastapi import FastAPI, Body, HTTPException
+from fastapi.responses import RedirectResponse
+from fastapi import Request as FastAPI_Request
 import motor.motor_asyncio
 from starlette.middleware.cors import CORSMiddleware
 from bson import ObjectId
 from typing import Annotated, Optional, List
 from pydantic import BaseModel, BeforeValidator, Field, ConfigDict
-from auth.user_creation import verify_token
+from auth.user_creation import handle_id_token
+from datetime import datetime, timedelta
+from algorithm import *
 import requests
 import json
+import httpx
 
 app = FastAPI()
 
@@ -32,6 +37,9 @@ class UserModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     username: str = Field(...)
     email: str = Field(...)
+    profile_picture: str = Field(...)
+    access_token: str = Field(...)
+    refresh_token: str = Field(...)
 
     class Config:
         json_encoders = {
@@ -97,6 +105,7 @@ async def list_groups():
 @app.get("/{group_id}/users", response_description="User json info in a group")
 async def get_users_in_group(group_id: str):
     # Find group by id
+    group_id = ObjectId(group_id)
     group = await groupCollection.find_one({"_id": group_id})
     
     if not group:
@@ -119,9 +128,33 @@ async def get_users_in_group(group_id: str):
     
     return {"group_id": group_id, "users": users}
 
+async def get_users_in_group_with_keys(group_id: str):
+    # Find group by id
+    group_id = ObjectId(group_id)
+    group = await groupCollection.find_one({"_id": group_id})
+    
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    # Retrieve the list of user IDs in the group
+    user_ids = group.get("ids", [])
+    
+    if not user_ids:
+        return {"message": "No users in this group"}
+    
+    # Fetch user details from the Users collection
+    users_cursor = userCollection.find({"_id": {"$in": [ObjectId(user_id) for user_id in user_ids]}})
+    
+    users = []
+    async for user in users_cursor:
+        user_data = {key: user[key] for key in user}
+        user_data["_id"] = str(user_data["_id"])
+        users.append(user_data)
+    
+    return {"group_id": group_id, "users": users}
+
 @app.get("/user/{user_id}", response_description="Single user json info")
 async def get_user(user_id: str):
-
     user_id_obj = ObjectId(user_id)
 
     user = await userCollection.find_one({"_id": user_id_obj})
@@ -131,9 +164,29 @@ async def get_user(user_id: str):
     
     user["_id"] = str(user["_id"])
 
-    return user
-    
+    # Don't return the secret stuff
+    del user["refresh_token"]
+    del user["access_token"]
 
+    return user
+
+@app.get("/groupswith/{user_id}", response_description="Groups that a user is in")
+async def get_groups_with_user(user_id: str):
+    groups_cursor = groupCollection.find({"ids": {"$in": [user_id]}})
+    groups = await groups_cursor.to_list(length=None) 
+
+    # convert IDs to strings
+    for group in groups:
+        group["_id"] = str(group["_id"])
+        group["ids"] = [str(user) for user in group["ids"]]
+
+    return groups
+
+@app.get("/group/mergedcalendar/{group_id}", response_description="Returns JSON regarding the merged calendar")
+async def get_merged_calendar(group_id: str):
+    users = await get_users_in_group_with_keys(group_id)
+    users = users["users"]
+    return await algorithm_process_users(users)
 
 # Functions to Create (users/groups)
 # Post
@@ -159,23 +212,57 @@ class JSONEncoder(json.JSONEncoder):
             return str(o)
         return super().default(o)
 
-@app.post("/verify-token/{token}", response_description="Verify token")
-async def verifyToken(token: str): 
-    user_data = verify_token(token)
-    model = UserModel(**user_data)
+# Endpoint that handles the redirect from Google
+@app.get("/auth/callback", response_description="Callback")
+async def auth_callback(request: FastAPI_Request):
+    code = request.query_params.get("code")
 
-    if user_data:
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing code parameter")
+
+    # Exchange the authorization code for a token
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "redirect_uri": "http://localhost:8000/auth/callback",
+                "grant_type": "authorization_code",
+            },
+        )    
+
+    # Response data with access_token, refresh_token, id_token
+    response_data = response.json()
+
+    # Retrieve public user info that can be returned back to the front end
+    public_user_info = handle_id_token(response_data["id_token"])
+
+    # Retrieve private user info that is stored but not returned to the front end
+    if "access_token" not in response_data or "refresh_token" not in response_data:
+        raise HTTPException(status_code=500, detail="Failed to retrieve tokens from Google")
+    
+    all_user_info = public_user_info
+    all_user_info["access_token"] = response_data["access_token"]
+    all_user_info["refresh_token"] = response_data["refresh_token"]
+
+    #TODO -- Encrypt tokens
+    model = UserModel(**all_user_info)
+
+    if public_user_info:
         # first, check if the user is already in the database via email
-        user = await userCollection.find_one({"email": user_data["email"]})
-
+        user = await userCollection.find_one({"email": public_user_info["email"]})
+        print(user)
         if not user:
-            await addUser(model)
-            user_data["new_user"] = True
+            user = await addUser(model)
+
+            public_user_info["new_user"] = True
         else:
-            user_data["_id"] = str(user["_id"])
-            user_data["new_user"] = False
-        return user_data
-    raise HTTPException(status_code=400, detail="Invalid token or user data.")
+            update_user(user["_id"], model)
+            public_user_info["new_user"] = False
+
+    return RedirectResponse(url=f"https://localhost:3000/home?uid={str(user['_id'])}")
 
 #Put
 # Function to join group
@@ -213,7 +300,6 @@ async def join_group(email: str, group_name: str):
 
     # Get updated user document
     updated_user = await userCollection.find_one({"email": email})
-
 
     # Check if the updated_user is None
     if not updated_user:
@@ -292,7 +378,7 @@ async def update_user(user_id: str, user: UserModel):
 
 @app.get("/")
 async def root():
-    return {"Hello Grouper"}
+    return {"Hello Grouper. I love Grouper..."}
 
 def serialize_doc(doc):
     """Convert MongoDB document to serializable dictionary"""

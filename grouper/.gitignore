@@ -34,4 +34,9 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+<<<<<<< HEAD
 next-env.d.ts
+certificates
+=======
+next-env.d.ts
+>>>>>>> 543db4a274ae91dd9e49b4b0f2b6173d994ec4f2
