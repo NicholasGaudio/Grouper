@@ -1,0 +1,4 @@
+fastapi
+motor
+typing
+google-auth
