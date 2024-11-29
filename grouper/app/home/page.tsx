@@ -20,20 +20,30 @@ import {
 import { Navbar } from "@/components/navbar";
 import { Plus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ProfilePicture } from "@/components/profile-picture";
 
 const HomePage = () => {
   const [groupName, setGroupName] = useState("");
-  const [currentId, setCurrentId] = useState("");
   const [userGroups, setUserGroups] = useState([]);
 
   const router = useRouter();
 
   const fetchUserIntoLocalStorage = async () => {
-    const params = new URLSearchParams(window.location.search);
-    const uid = params.get("uid"); // Extract 'uid' from the query string
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const uidFromParams = params.get('uid');
+      
+      const userStr = localStorage.getItem("user");
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+      
+      const uid = uidFromParams || currentUser?._id;
 
-    if (uid) {
-      // Store user data in localStorage
+      if (!uid) {
+        console.error("No user ID found");
+        router.push("/");
+        return null;
+      }
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/user/${uid}`,
         {
@@ -45,14 +55,21 @@ const HomePage = () => {
       );
 
       if (!response.ok) {
-        router.push("/home");
+        throw new Error("Failed to fetch user data");
       }
 
       const userData = await response.json();
       localStorage.setItem("user", JSON.stringify(userData));
-      console.log(userData);
-    } else {
-      router.push("/home");
+      
+      if (uidFromParams) {
+        window.history.replaceState({}, document.title, "/home");
+      }
+      
+      return userData;
+    } catch (error) {
+      console.error("Error initializing user:", error);
+      router.push("/");
+      return null;
     }
   };
 
@@ -72,9 +89,14 @@ const HomePage = () => {
       console.error("Error fetching groups:", error);
     }
   };
+
   useEffect(() => {
-    fetchUserIntoLocalStorage();
-    fetchUserGroups();
+    const initialize = async () => {
+      await fetchUserIntoLocalStorage();
+      await fetchUserGroups();
+    };
+
+    initialize();
   }, []);
 
   const handleSubmit = async () => {
@@ -82,13 +104,9 @@ const HomePage = () => {
       const userStr = localStorage.getItem("user");
       const currentUser = userStr ? JSON.parse(userStr) : null;
 
-      const ids = currentId
-        .split(",")
-        .map((id) => id.trim())
-        .filter((id) => id !== "");
-
-      if (currentUser?._id) {
-        ids.push(currentUser._id);
+      if (!currentUser?._id) {
+        console.error("No user found");
+        return;
       }
 
       const response = await fetch(
@@ -100,14 +118,16 @@ const HomePage = () => {
           },
           body: JSON.stringify({
             name: groupName,
-            ids: ids,
+            members: [{
+              id: currentUser._id,
+              profile_picture: currentUser.profile_picture,
+              username: currentUser.username
+            }]
           }),
         }
       );
 
       setGroupName("");
-      setCurrentId("");
-
       await fetchUserGroups();
     } catch (error) {
       console.error("Error creating group:", error);
@@ -129,7 +149,28 @@ const HomePage = () => {
                   className="group w-72"
                 >
                   <div className="w-full mb-3">
-                    <div className="aspect-square w-full border rounded-xl hover:bg-accent/50 transition-colors duration-200">
+                    <div className="aspect-square w-full border rounded-xl hover:bg-accent/50 transition-colors duration-200 relative p-4">
+                      <div className="grid grid-cols-2 gap-2 h-full">
+                        {group.members?.slice(0, 3).map((member, idx) => (
+                          <div 
+                            key={member.id}
+                            className="relative w-full aspect-square rounded-full overflow-hidden border-2 border-background"
+                          >
+                            <ProfilePicture
+                              src={member.profile_picture}
+                              alt={member.username}
+                              className="w-full h-full"
+                            />
+                          </div>
+                        ))}
+                        {group.members?.length > 4 && (
+                          <div className="w-full aspect-square rounded-full bg-muted flex items-center justify-center border-2 border-background">
+                            <span className="text-sm font-medium">
+                              +{group.members.length - 3}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-3">
@@ -137,7 +178,7 @@ const HomePage = () => {
                         {group.name}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {group.ids.length} {group.ids.length === 1 ? 'member' : 'members'}
+                        {group.members?.length} {group.members?.length === 1 ? 'member' : 'members'}
                       </p>
                     </div>
                   </div>

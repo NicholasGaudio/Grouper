@@ -52,10 +52,15 @@ class UserList(BaseModel):
     users: List[UserModel]
 
 # Schema Model for Groups
+class GroupMember(BaseModel):
+    id: str = Field(...)
+    profile_picture: str = Field(...)
+    username: str = Field(...)
+
 class GroupModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     name: str = Field(...)
-    ids: list = Field(...)
+    members: Optional[List[GroupMember]] = Field(default=[])
 
 class GroupList(BaseModel):
     groups: List[GroupModel]
@@ -104,46 +109,31 @@ async def list_groups():
 
 @app.get("/groups/{user_id}", response_description="List of user's groups", response_model=GroupList, response_model_by_alias=False)
 async def list_user_groups(user_id: str):
-    groups = await groupCollection.find({"ids": user_id}).to_list(1000)
+    groups = await groupCollection.find({"members.id": user_id}).to_list(1000)
 
     formatted_groups = []
     for group in groups:
         group["_id"] = str(group["_id"])
-
-        if isinstance(group.get("ids"), str):
-            group["ids"] = group["ids"].split(",") if group["ids"] else []
-        elif group.get("ids") is None:
-            group["ids"] = []
-
+        if not group.get("members"):
+            group["members"] = []
+            
         formatted_groups.append(group)
 
     return GroupList(groups=formatted_groups)
 
 @app.get("/{group_id}/users", response_description="User json info in a group")
 async def get_users_in_group(group_id: str):
-    # Find group by id
+
     group_id = ObjectId(group_id)
     group = await groupCollection.find_one({"_id": group_id})
     
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
     
-    # Retrieve the list of user IDs in the group
-    user_ids = group.get("ids", [])
-    
-    if not user_ids:
+    if not group.get("members"):
         return {"message": "No users in this group"}
     
-    # Fetch user details from the Users collection
-    users_cursor = userCollection.find({"_id": {"$in": [ObjectId(user_id) for user_id in user_ids]}})
-    
-    users = []
-    async for user in users_cursor:
-        user_data = {key: user[key] for key in user if key not in ["access_token", "refresh_token"]}
-        user_data["_id"] = str(user_data["_id"])
-        users.append(user_data)
-    
-    return {"group_id": group_id, "users": users}
+    return {"group_id": str(group_id), "users": group["members"]}
 
 async def get_users_in_group_with_keys(group_id: str):
     # Find group by id
@@ -181,9 +171,8 @@ async def get_user(user_id: str):
     
     user["_id"] = str(user["_id"])
 
-    # Don't return the secret stuff
-    del user["refresh_token"]
-    del user["access_token"]
+    user.pop("refresh_token", None)
+    user.pop("access_token", None)
 
     return user
   
@@ -264,7 +253,7 @@ async def auth_callback(request: FastAPI_Request):
 
             public_user_info["new_user"] = True
         else:
-            update_user(user["_id"], model)
+            await update_user(user["_id"], model)
             public_user_info["new_user"] = False
 
     return RedirectResponse(url=f"https://localhost:3000/home?uid={str(user['_id'])}")
@@ -328,7 +317,7 @@ async def invite_group(invite_data: InviteRequest):
         raise HTTPException(status_code=404, detail="Group not found")
     
     # Check if user is already in the group
-    if str(to_user["_id"]) in group["ids"]:
+    if any(member["id"] == str(to_user["_id"]) for member in group.get("members", [])):
         raise HTTPException(status_code=400, detail="User is already in this group")
     
     # Check if invite already exists
@@ -340,9 +329,8 @@ async def invite_group(invite_data: InviteRequest):
     if existing_invite:
         raise HTTPException(status_code=400, detail="User already invited")
     
-    # Create new invite
     new_invite = {
-        "from_user": str(group["ids"][0]),
+        "from_user": group["members"][0]["id"] if group.get("members") else None,
         "to_user": str(to_user["_id"]),
         "group_id": str(group["_id"])
     }
@@ -420,39 +408,46 @@ async def get_user_invites(user_id: str):
 
 @app.put("/invites/{invite_id}/accept")
 async def accept_invite(invite_id: str):
-        # Find the invite
-        invite = await inviteCollection.find_one({"_id": ObjectId(invite_id)})
-        if not invite:
-            raise HTTPException(status_code=404, detail="Invite not found")
 
-        await groupCollection.update_one(
-            {"_id": ObjectId(invite["group_id"])},
-            {"$addToSet": {"ids": invite["to_user"]}}
-        )
+    invite = await inviteCollection.find_one({"_id": ObjectId(invite_id)})
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite not found")
 
-        await inviteCollection.delete_one({"_id": ObjectId(invite_id)})
-        
-        return {"message": "Invite accepted successfully"}
+    to_user = await userCollection.find_one({"_id": ObjectId(invite["to_user"])})
+    if not to_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    await groupCollection.update_one(
+        {"_id": ObjectId(invite["group_id"])},
+        {"$addToSet": {"members": {
+            "id": str(to_user["_id"]),
+            "profile_picture": to_user["profile_picture"],
+            "username": to_user["username"]
+        }}}
+    )
+
+    await inviteCollection.delete_one({"_id": ObjectId(invite_id)})
+    
+    return {"message": "Invite accepted successfully"}
 
 @app.put("/invites/{invite_id}/decline")
 async def decline_invite(invite_id: str):
-        result = await inviteCollection.delete_one({"_id": ObjectId(invite_id)})
-        if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Invite not found")
-            
-        return {"message": "Invite declined successfully"}
+    result = await inviteCollection.delete_one({"_id": ObjectId(invite_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Invite not found")
+        
+    return {"message": "Invite declined successfully"}
 
 @app.put("/groups/{group_id}/leave")
 async def leave_group(group_id: str, user_id: str):
-        result = await groupCollection.update_one(
+    try:
+        await groupCollection.update_one(
             {"_id": ObjectId(group_id)},
-            {"$pull": {"ids": user_id}}
+            {"$pull": {"members": {"id": user_id}}}
         )
-        
-        if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="Group not found or user not in group")
-            
         return {"message": "Successfully left group"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.put("/groups/{group_id}/update")
 async def update_group(group_id: str, group_data: dict):
@@ -466,5 +461,64 @@ async def update_group(group_id: str, group_data: dict):
             raise HTTPException(status_code=404, detail="Group not found")
 
         return {"message": "Group updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.put("/users/{user_id}/update-username")
+async def update_username(user_id: str, username: str):
+    try:
+        user_id_obj = ObjectId(user_id)
+        
+        existing_user = await userCollection.find_one({
+            "_id": {"$ne": user_id_obj},
+            "username": username
+        })
+        
+        if existing_user:
+            raise HTTPException(
+                status_code=400, 
+                detail="Username already taken"
+            )
+        
+        result = await userCollection.update_one(
+            {"_id": user_id_obj},
+            {"$set": {"username": username}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        await groupCollection.update_many(
+            {"members.id": str(user_id_obj)},
+            {"$set": {"members.$.username": username}}
+        )
+        
+        return {"message": "Username updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.put("/users/{user_id}/update-profile-picture")
+async def update_profile_picture(user_id: str, profile_picture: str):
+    try:
+        user_id_obj = ObjectId(user_id)
+        
+        result = await userCollection.update_one(
+            {"_id": user_id_obj},
+            {"$set": {"profile_picture": profile_picture}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        await groupCollection.update_many(
+            {"members.id": str(user_id_obj)},
+            {"$set": {"members.$.profile_picture": profile_picture}}
+        )
+        
+        return {"message": "Profile picture updated successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
