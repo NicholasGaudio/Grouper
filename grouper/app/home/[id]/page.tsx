@@ -87,6 +87,23 @@ export default function GroupPage() {
 
       const data = await response.json();
 
+      if (!response.ok) {
+        if (data.detail === "User not found") {
+          alert(`No user found with email ${inviteId}`);
+          return;
+        }
+        if (data.detail === "User is already in this group") {
+          alert(`${inviteId} is already a member of ${group.name}`);
+          return;
+        }
+        if (data.detail === "User already invited") {
+          alert(`${inviteId} already has a pending invite to ${group.name}`);
+          return;
+        }
+        throw new Error(data.detail || 'Failed to invite user');
+      }
+
+      alert(`Successfully invited ${inviteId} to ${group.name}`);
       setInviteId('');
       const closeButton = document.querySelector('[data-button="close"]');
       if (closeButton instanceof HTMLElement) {

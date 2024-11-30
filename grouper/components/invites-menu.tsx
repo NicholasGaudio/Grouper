@@ -112,9 +112,14 @@ export function InvitesMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" className="relative">
           {invites.length > 0 ? (
-            <Mail className="h-5 w-5" />
+            <>
+              <div className="relative">
+                <Mail className="h-5 w-5" />
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500" />
+              </div>
+            </>
           ) : (
             <MailOpen className="h-5 w-5" />
           )}
