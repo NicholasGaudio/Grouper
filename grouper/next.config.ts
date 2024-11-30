@@ -5,6 +5,18 @@ const nextConfig: NextConfig = {
   devIndicators: {
     buildActivity: false,
     appIsrStatus: false
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      }
+    ]
   }
 };
 

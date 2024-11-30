@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ProfilePicture } from "@/components/profile-picture";
 
 export default function GroupPage() {
   const params = useParams();
@@ -46,7 +47,7 @@ export default function GroupPage() {
         const foundGroup = data.groups.find(g => g.id === params.id);
         if (foundGroup) {
           setGroup(foundGroup);
-          setIsCreator(foundGroup.ids[0] === user._id);
+          setIsCreator(foundGroup.members?.[0]?.id === user._id);
           setEditName(foundGroup.name || '');
         }
       } catch (error) {
@@ -199,7 +200,7 @@ export default function GroupPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Edit Group</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Placeholder.
+                        Change the name of the group.
                       </AlertDialogDescription>
                       <div className="mt-4 space-y-4">
                         <Input
@@ -289,9 +290,22 @@ export default function GroupPage() {
           <div className="space-y-4">
             <h2 className="text-2xl font-semibold">Members</h2>
             <div className="grid gap-2">
-              {group.ids.map((id: string) => (
-                <div key={id} className="p-2 border rounded">
-                  {id}
+              {group.members?.map((member) => (
+                <div 
+                  key={member.id} 
+                  className="p-4 border rounded-lg flex items-center gap-4"
+                >
+                  <div className="relative w-[60px] h-[60px]">
+                    <ProfilePicture
+                      src={member.profile_picture}
+                      alt={member.username}
+                      className="w-full h-full rounded-full"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium">{member.username}</p>
+                    <p className="text-sm text-muted-foreground">{member.email}</p>
+                  </div>
                 </div>
               ))}
             </div>
