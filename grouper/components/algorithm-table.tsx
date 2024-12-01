@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+
 import {
   Table,
   TableBody,
@@ -15,6 +16,7 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+
 
 //Interface representing the raw root structure of the .json
 interface RootData {
@@ -77,6 +79,7 @@ const calculateColor = (value: number): string => {
   return `rgb(${red}, ${green}, 0)`;
 };
 
+
 // Update the component to accept props
 interface AlgTableProps {
   groupId: string;
@@ -117,7 +120,7 @@ const AlgTable: React.FC<AlgTableProps> = ({ groupId }) => {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         const fetchedData: RootData = await response.json();
-        
+
         //Data is parsed here, after fetching
         const parsedData = fetchedData.availability.map((entry) => {
           const [date, time] = entry.time.split(" ");
@@ -137,6 +140,7 @@ const AlgTable: React.FC<AlgTableProps> = ({ groupId }) => {
         setData(parsedData);
         setGroupSize(fetchedData.total_people);
         setLoading(false);
+
       } catch (error) {
         console.error("Error fetching calendar data:", error);
         setLoading(false);
