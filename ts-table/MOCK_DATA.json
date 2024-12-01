@@ -1,0 +1,92 @@
+[
+    {
+        "time": "2024-11-01 08:07",
+        "busy_count": 15,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar"]
+    },
+    {
+        "time": "2024-11-01 08:38",
+        "busy_count": 30,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel", "Steve", "Tina", "Ursula", "Victor", "Wendy", "Xander", "Yara", "Zoe"]
+    },
+    {
+        "time": "2024-11-01 09:21",
+        "busy_count": 10,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy"]
+    },
+    {
+        "time": "2024-11-01 10:11",
+        "busy_count": 5,
+        "names_of_people_who_are_busy": ["Liam", "Mona", "Nina", "Oscar", "Paul"]
+    },
+    {
+        "time": "2024-11-01 11:44",
+        "busy_count": 25,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel"]
+    },
+    {
+        "time": "2024-11-01 12:09",
+        "busy_count": 20,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel", "Steve"]
+    },
+    {
+        "time": "2024-11-02 08:33",
+        "busy_count": 35,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel", "Steve", "Tina", "Ursula", "Victor", "Wendy", "Xander", "Yara", "Zoe"]
+    },
+    {
+        "time": "2024-11-02 09:58",
+        "busy_count": 50,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel", "Steve", "Tina", "Ursula", "Victor", "Wendy", "Xander", "Yara", "Zoe"]
+    },
+    {
+        "time": "2024-11-02 11:17",
+        "busy_count": 10,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve"]
+    },
+    {
+        "time": "2024-11-02 12:50",
+        "busy_count": 45,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel", "Steve", "Tina", "Ursula", "Victor", "Wendy", "Xander", "Yara", "Zoe"]
+    },
+    {
+        "time": "2024-11-03 08:12",
+        "busy_count": 40,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel", "Steve", "Tina", "Ursula", "Victor", "Wendy", "Xander", "Yara", "Zoe"]
+    },
+    {
+        "time": "2024-11-03 09:44",
+        "busy_count": 60,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel", "Steve", "Tina", "Ursula", "Victor", "Wendy", "Xander", "Yara", "Zoe"]
+    },
+    {
+        "time": "2024-11-03 11:55",
+        "busy_count": 30,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel"]
+    },
+    {
+        "time": "2024-11-03 12:36",
+        "busy_count": 55,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel", "Steve", "Tina", "Ursula", "Victor", "Wendy", "Xander", "Yara", "Zoe"]
+    },
+    {
+        "time": "2024-11-04 08:09",
+        "busy_count": 10,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve"]
+    },
+    {
+        "time": "2024-11-04 10:31",
+        "busy_count": 25,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi"]
+    },
+    {
+        "time": "2024-11-04 11:48",
+        "busy_count": 40,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn"]
+    },
+    {
+        "time": "2024-11-04 12:29",
+        "busy_count": 50,
+        "names_of_people_who_are_busy": ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Karl", "Liam", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel", "Steve", "Tina", "Ursula", "Victor", "Wendy", "Xander", "Yara", "Zoe"]
+    }
+]

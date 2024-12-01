@@ -1,0 +1,294 @@
+{
+    "total_people": 3,
+    "availability": [
+      {
+        "time": "2024-11-26 05:15",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "dingobird"
+        ]
+      },
+      {
+        "time": "2024-11-26 09:35",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-26 11:30",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-26 12:50",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-26 13:40",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-26 15:00",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-26 16:55",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-27 03:00",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-27 08:00",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "dingobird"
+        ]
+      },
+      {
+        "time": "2024-11-27 08:30",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-27 09:20",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-27 09:35",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-27 10:25",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-27 10:40",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-27 11:30",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-27 13:00",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-27 13:45",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-27 13:55",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-27 14:45",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-27 16:05",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-27 16:15",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-27 16:55",
+        "busy_count": 2,
+        "names_of_people_who_are_busy": [
+          "Justin W.",
+          "dingobird"
+        ]
+      },
+      {
+        "time": "2024-11-27 17:45",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "dingobird"
+        ]
+      },
+      {
+        "time": "2024-11-28 06:00",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-28 09:30",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "dingobird"
+        ]
+      },
+      {
+        "time": "2024-11-28 10:40",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-28 11:35",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-28 12:50",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-28 13:40",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-28 16:05",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-28 16:55",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-28 18:15",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-28 19:05",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-29 10:40",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-29 11:30",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-29 11:45",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-11-29 13:55",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "dingobird"
+        ]
+      },
+      {
+        "time": "2024-11-29 14:45",
+        "busy_count": 2,
+        "names_of_people_who_are_busy": [
+          "dingobird",
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-11-29 15:30",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "dingobird"
+        ]
+      },
+      {
+        "time": "2024-12-02 08:30",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-12-02 09:20",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-12-02 09:35",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-12-02 10:25",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-12-02 10:40",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-12-02 11:30",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      },
+      {
+        "time": "2024-12-02 17:15",
+        "busy_count": 0,
+        "names_of_people_who_are_busy": []
+      },
+      {
+        "time": "2024-12-02 18:15",
+        "busy_count": 1,
+        "names_of_people_who_are_busy": [
+          "Justin W."
+        ]
+      }
+    ]
+  }
