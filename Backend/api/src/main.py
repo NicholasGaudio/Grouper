@@ -143,11 +143,14 @@ async def get_users_in_group_with_keys(group_id: str):
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
     
-    # Retrieve the list of user IDs in the group
-    user_ids = group.get("ids", [])
+    # Get the members array from the group
+    members = group.get("members", [])
     
-    if not user_ids:
+    if not members:
         return {"message": "No users in this group"}
+    
+    # Extract user IDs from the members array
+    user_ids = [member["id"] for member in members]
     
     # Fetch user details from the Users collection
     users_cursor = userCollection.find({"_id": {"$in": [ObjectId(user_id) for user_id in user_ids]}})
