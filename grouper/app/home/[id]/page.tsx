@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ProfilePicture } from "@/components/profile-picture";
+import AlgTable from "@/components/algorithm-table";
 
 export default function GroupPage() {
   const params = useParams();
@@ -325,6 +326,13 @@ export default function GroupPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+          
+          <div className="mt-8">
+            <h2 className="text-2xl font-semibold mb-4">Group Availability</h2>
+            <div className="border rounded-lg p-4">
+              <AlgTable groupId={params.id as string} />
             </div>
           </div>
         </div>

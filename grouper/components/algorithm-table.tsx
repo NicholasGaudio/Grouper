@@ -75,8 +75,12 @@ const calculateColor = (value: number): string => {
   return `rgb(${red}, ${green}, 0)`;
 };
 
-//Functional component to render the table
-const AlgTable: React.FC = () => {
+// Update the component to accept props
+interface AlgTableProps {
+  groupId: string;
+}
+
+const AlgTable: React.FC<AlgTableProps> = ({ groupId }) => {
   //Necessary state variables
   const [data, setData] = useState<ParsedDataEntry[]>([]);
   const [groupSize, setGroupSize] = useState<number | null>(null);
@@ -87,16 +91,16 @@ const AlgTable: React.FC = () => {
   //First generate the rows for the table
   const timeSlots = generateTimeSlots(startTime, endTime);
 
-  //Fetch and process the JSON, once, when the component mounts
+  //Fetch and process the calendar data from the API
   useEffect(() => {
-    fetch(dataPath)
-      .then((response) => {
+    const fetchCalendarData = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/group/mergedcalendar/${groupId}`);
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        return response.json();
-      })
-      .then((fetchedData: RootData) => {
+        const fetchedData: RootData = await response.json();
+        
         //Data is parsed here, after fetching
         const parsedData = fetchedData.availability.map((entry) => {
           const [date, time] = entry.time.split(" ");
@@ -116,9 +120,16 @@ const AlgTable: React.FC = () => {
         setData(parsedData);
         setGroupSize(fetchedData.total_people);
         setLoading(false);
-      })
-      .catch((error) => console.error("Error fetching JSON:", error));
-  }, []);
+      } catch (error) {
+        console.error("Error fetching calendar data:", error);
+        setLoading(false);
+      }
+    };
+
+    if (groupId) {
+      fetchCalendarData();
+    }
+  }, [groupId]);
 
   if (loading) {
     return <p>Loading...</p>;
