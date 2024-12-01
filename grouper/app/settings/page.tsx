@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const [username, setUsername] = useState("");
   const [profilePicture, setProfilePicture] = useState("");
   const [loading, setLoading] = useState(false);
+  const [targetEmail, setTargetEmail] = useState("");
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -134,6 +135,27 @@ export default function SettingsPage() {
     }
   };
 
+  const deleteUser = async () => {
+    if (!targetEmail.trim()) return;
+    
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/${targetEmail}/delete?admin_id=${user._id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete user");
+      }
+
+      setTargetEmail("");
+    } catch (error) {
+      alert("Failed to delete user");
+    }
+  };
+
   if (!user) return <div>Loading...</div>;
 
   return (
@@ -198,6 +220,25 @@ export default function SettingsPage() {
               </Button>
             </div>
           </div>
+
+          {user?.username === "TEST" && (
+            <div className="space-y-6 pt-8 border-t">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter user email"
+                  value={targetEmail}
+                  onChange={(e) => setTargetEmail(e.target.value)}
+                />
+                <Button
+                  variant="destructive"
+                  onClick={deleteUser}
+                  disabled={!targetEmail.trim()}
+                >
+                  Delete User
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -531,3 +531,41 @@ async def update_profile_picture(user_id: str, profile_picture: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/users/{email}/delete")
+async def delete_user(email: str, admin_id: str):
+    # Verify the requesting user is an admin
+    admin = await userCollection.find_one({"_id": ObjectId(admin_id)})
+    if not admin or admin.get("username") != "TEST":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    try:
+        # Find user by email
+        user = await userCollection.find_one({"email": email})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        user_id = str(user["_id"])
+        
+        # Delete user from Users collection
+        await userCollection.delete_one({"_id": user["_id"]})
+        
+        # Remove user from all groups they're in
+        await groupCollection.update_many(
+            {"members.id": user_id},
+            {"$pull": {"members": {"id": user_id}}}
+        )
+        
+        # Delete any invites for this user
+        await inviteCollection.delete_many({
+            "$or": [
+                {"from_user": user_id},
+                {"to_user": user_id}
+            ]
+        })
+        
+        return {"message": "User deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
