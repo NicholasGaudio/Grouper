@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from "@/components/navbar";
-import { Trash2, UserPlus, LogOut, Pencil } from "lucide-react";
+import { Trash2, UserPlus, LogOut, Pencil, X, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,6 +18,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ProfilePicture } from "@/components/profile-picture";
+import AlgTable from "@/components/algorithm-table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function GroupPage() {
   const params = useParams();
@@ -87,6 +89,23 @@ export default function GroupPage() {
 
       const data = await response.json();
 
+      if (!response.ok) {
+        if (data.detail === "User not found") {
+          alert(`No user found with email ${inviteId}`);
+          return;
+        }
+        if (data.detail === "User is already in this group") {
+          alert(`${inviteId} is already a member of ${group.name}`);
+          return;
+        }
+        if (data.detail === "User already invited") {
+          alert(`${inviteId} already has a pending invite to ${group.name}`);
+          return;
+        }
+        throw new Error(data.detail || 'Failed to invite user');
+      }
+
+      alert(`Successfully invited ${inviteId} to ${group.name}`);
       setInviteId('');
       const closeButton = document.querySelector('[data-button="close"]');
       if (closeButton instanceof HTMLElement) {
@@ -141,6 +160,28 @@ export default function GroupPage() {
       router.push('/home');
     } catch (error) {
       console.error('Error leaving group:', error);
+    }
+  };
+
+  const handleKickMember = async (memberId: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/groups/${params.id}/leave?user_id=${memberId}`,
+        {
+          method: 'PUT',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to kick member');
+      }
+
+      setGroup(prev => ({
+        ...prev,
+        members: prev.members.filter(member => member.id !== memberId)
+      }));
+    } catch (error) {
+      console.error('Error kicking member:', error);
     }
   };
 
@@ -287,29 +328,75 @@ export default function GroupPage() {
               )}
             </div>
           </div>
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold">Members</h2>
-            <div className="grid gap-2">
-              {group.members?.map((member) => (
-                <div 
-                  key={member.id} 
-                  className="p-4 border rounded-lg flex items-center gap-4"
-                >
-                  <div className="relative w-[60px] h-[60px]">
-                    <ProfilePicture
-                      src={member.profile_picture}
-                      alt={member.username}
-                      className="w-full h-full rounded-full"
-                    />
+
+          <Tabs defaultValue="availability" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="availability">Group Availability</TabsTrigger>
+              <TabsTrigger value="members">Members</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="members" className="space-y-4">
+              <div className="grid gap-2">
+                {group.members?.map((member) => (
+                  <div 
+                    key={member.id} 
+                    className="p-4 border rounded-lg flex items-center gap-4 group relative"
+                  >
+                    <div className="relative w-[60px] h-[60px]">
+                      <ProfilePicture
+                        src={member.profile_picture}
+                        alt={member.username}
+                        className="w-full h-full rounded-full"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{member.username}</p>
+                        {member.id === group.members[0].id && (
+                          <Crown className="h-4 w-4 text-yellow-500" />
+                        )}
+                      </div>
+                    </div>
+                    {isCreator && member.id !== group.members[0].id && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-4 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/10 [&_svg]:text-red-500 dark:[&_svg]:text-red-500"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Kick Member</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to remove {member.username} from the group?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleKickMember(member.id)}
+                              className="bg-red-500 text-white hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-600"
+                            >
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
-                  <div>
-                    <p className="font-medium">{member.username}</p>
-                    <p className="text-sm text-muted-foreground">{member.email}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                ))}
+              </div>
+            </TabsContent>
+            <TabsContent value="availability">
+              <div className="border rounded-lg p-4">
+                <AlgTable groupId={params.id as string} />
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

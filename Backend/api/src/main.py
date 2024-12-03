@@ -143,23 +143,24 @@ async def get_users_in_group_with_keys(group_id: str):
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
     
-    # Retrieve the list of user IDs in the group
-    user_ids = group.get("ids", [])
+    # Get the members array from the group
+    members = group.get("members", [])
     
-    if not user_ids:
+    if not members:
         return {"message": "No users in this group"}
     
+    # Extract user IDs from the members array
+    user_ids = [member["id"] for member in members]
+    
     # Fetch user details from the Users collection
-    users_cursor = userCollection.find({"_id": {"$in": [ObjectId(user_id) for user_id in user_ids]}})
-    
     users = []
-    async for user in users_cursor:
-        user_data = {key: user[key] for key in user}
-        user_data["_id"] = str(user_data["_id"])
-        users.append(user_data)
+    async for user in userCollection.find({
+        "_id": {"$in": [ObjectId(user_id) for user_id in user_ids]},
+    }):
+        if "access_token" in user and "refresh_token" in user:
+            users.append(user)
     
-    return {"group_id": group_id, "users": users}
-
+    return users
 @app.get("/user/{user_id}", response_description="Single user json info")
 async def get_user(user_id: str):
     user_id_obj = ObjectId(user_id)
@@ -179,7 +180,15 @@ async def get_user(user_id: str):
 @app.get("/group/mergedcalendar/{group_id}", response_description="Returns JSON regarding the merged calendar")
 async def get_merged_calendar(group_id: str):
     users = await get_users_in_group_with_keys(group_id)
-    users = users["users"]
+    if isinstance(users, dict) and "message" in users:
+        raise HTTPException(status_code=404, detail=users["message"])
+    
+    if not users:
+        raise HTTPException(
+            status_code=400, 
+            detail="No users with valid access tokens found in this group"
+        )
+        
     return await algorithm_process_users(users)
 
 # Functions to Create (users/groups)
@@ -518,6 +527,44 @@ async def update_profile_picture(user_id: str, profile_picture: str):
         )
         
         return {"message": "Profile picture updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/users/{email}/delete")
+async def delete_user(email: str, admin_id: str):
+    # Verify the requesting user is an admin
+    admin = await userCollection.find_one({"_id": ObjectId(admin_id)})
+    if not admin or admin.get("username") != "TEST":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    try:
+        # Find user by email
+        user = await userCollection.find_one({"email": email})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        user_id = str(user["_id"])
+        
+        # Delete user from Users collection
+        await userCollection.delete_one({"_id": user["_id"]})
+        
+        # Remove user from all groups they're in
+        await groupCollection.update_many(
+            {"members.id": user_id},
+            {"$pull": {"members": {"id": user_id}}}
+        )
+        
+        # Delete any invites for this user
+        await inviteCollection.delete_many({
+            "$or": [
+                {"from_user": user_id},
+                {"to_user": user_id}
+            ]
+        })
+        
+        return {"message": "User deleted successfully"}
     except HTTPException:
         raise
     except Exception as e:

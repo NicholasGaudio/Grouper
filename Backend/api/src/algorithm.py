@@ -30,7 +30,11 @@ def find_availability_timeline(events_lists):
     # Add all events start and end times to the time_points list
     for events in events_lists: # For each person's list
         for event in events: # For each event in each person's list
-            time_points.append((event[0], 'start', event[2]))
+            # Add intermediate points during the event
+            intermediate_points = generate_time_points(event[0], event[1])
+            for point in intermediate_points:
+                time_points.append((point, 'busy', event[2]))
+            # Add the end point
             time_points.append((event[1], 'end', event[2]))
 
     # Sort time points by time
@@ -39,19 +43,25 @@ def find_availability_timeline(events_lists):
     # Traverse the time points and count the availability at each point
     busy_count = 0
     availability = []
-    previous_event_time = time_points[0][0]
+    previous_event_time = None
     names_of_people_who_are_busy = []
 
     for (time, event_type, owner) in time_points:
         if time != previous_event_time:
-            availability.append({"time": time, "busy_count": busy_count, "names_of_people_who_are_busy": names_of_people_who_are_busy.copy()})
-
-        if event_type == 'start':
-                busy_count += 1
-                names_of_people_who_are_busy.append(owner)
-        if event_type == 'end':
-                busy_count -= 1
-                names_of_people_who_are_busy.remove(owner)
+            if event_type == 'busy':
+                if owner not in names_of_people_who_are_busy:
+                    names_of_people_who_are_busy.append(owner)
+                busy_count = len(names_of_people_who_are_busy)
+            else:
+                if owner in names_of_people_who_are_busy:
+                    names_of_people_who_are_busy.remove(owner)
+                busy_count = len(names_of_people_who_are_busy)
+            
+            availability.append({
+                "time": time,
+                "busy_count": busy_count,
+                "names_of_people_who_are_busy": names_of_people_who_are_busy.copy()
+            })
 
         previous_event_time = time
 
@@ -134,3 +144,15 @@ async def algorithm_process_users(users):
         events_lists.append(personal_events)
     
     return find_availability_timeline(events_lists)
+
+def generate_time_points(start_str, end_str):
+    start = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
+    end = datetime.fromisoformat(end_str.replace('Z', '+00:00'))
+    
+    times = []
+    current = start
+    while current < end:
+        times.append(current.strftime('%Y-%m-%d %H:%M'))
+        current += timedelta(minutes=30)
+    
+    return times

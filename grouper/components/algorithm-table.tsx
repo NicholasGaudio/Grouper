@@ -1,18 +1,22 @@
 import React, { useEffect, useState } from "react";
 
-//HI GRACIOUS GROUP MEMBER, TO INTEGRATE THIS FILE WITH THE PROJECT, FOLLOW THESE THREE INSTRUCTIONS
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 
-//1: ADD THIS LINE TO THE BEGINNING OF THE GROUP PAGE
-//import AlgTable from "./algorithm-table";
-
-//2: ADD THIS LINE TO THE END OF THE RETURN OF THE GROUP PAGE
-//<div> <AlgTable /> </div>
-
-//3: ADD A LINE HERE TO DOWNLOAD THE .JSON DATA FROM THE BACKEND
-//--REPLACE WITH .JSON FETCH CALL--
-
-//4: SET datapath EQUAL TO THE LOCATION OF THE DOWNLOADED DATA FOR THE GROUP RELATIVE TO THE SOURCE DIRECTORY FOR THE APP
-const dataPath: string = "/newdata.json";
 
 //Interface representing the raw root structure of the .json
 interface RootData {
@@ -75,28 +79,48 @@ const calculateColor = (value: number): string => {
   return `rgb(${red}, ${green}, 0)`;
 };
 
-//Functional component to render the table
-const AlgTable: React.FC = () => {
-  //Necessary state variables
+
+// Update the component to accept props
+interface AlgTableProps {
+  groupId: string;
+}
+
+const AlgTable: React.FC<AlgTableProps> = ({ groupId }) => {
   const [data, setData] = useState<ParsedDataEntry[]>([]);
   const [groupSize, setGroupSize] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [startTime, setStartTime] = useState(9);
-  const [endTime, setEndTime] = useState(17);
-  
+  const [startTime, setStartTime] = useState(0);
+  const [endTime, setEndTime] = useState(24);
+
+  const handleStartTimeChange = (value: number[]) => {
+    const newStartTime = value[0];
+    if (newStartTime >= endTime - 1) {
+      setEndTime(Math.min(newStartTime + 2, 24));
+    }
+    setStartTime(newStartTime);
+  };
+
+  const handleEndTimeChange = (value: number[]) => {
+    const newEndTime = value[0];
+    if (newEndTime <= startTime + 1) {
+      setStartTime(Math.max(newEndTime - 2, 0));
+    }
+    setEndTime(newEndTime);
+  };
+
   //First generate the rows for the table
   const timeSlots = generateTimeSlots(startTime, endTime);
 
-  //Fetch and process the JSON, once, when the component mounts
+  //Fetch and process the calendar data from the API
   useEffect(() => {
-    fetch(dataPath)
-      .then((response) => {
+    const fetchCalendarData = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/group/mergedcalendar/${groupId}`);
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        return response.json();
-      })
-      .then((fetchedData: RootData) => {
+        const fetchedData: RootData = await response.json();
+
         //Data is parsed here, after fetching
         const parsedData = fetchedData.availability.map((entry) => {
           const [date, time] = entry.time.split(" ");
@@ -116,9 +140,17 @@ const AlgTable: React.FC = () => {
         setData(parsedData);
         setGroupSize(fetchedData.total_people);
         setLoading(false);
-      })
-      .catch((error) => console.error("Error fetching JSON:", error));
-  }, []);
+
+      } catch (error) {
+        console.error("Error fetching calendar data:", error);
+        setLoading(false);
+      }
+    };
+
+    if (groupId) {
+      fetchCalendarData();
+    }
+  }, [groupId]);
 
   if (loading) {
     return <p>Loading...</p>;
@@ -140,77 +172,103 @@ const AlgTable: React.FC = () => {
   //Extract and sort the dates for the table columns
   const dates = Object.keys(groupedData).sort();
 
-  //Render the table and input fields for start/end time
-  //I can't put any more comments below here or they will end up in the html
   return (
-    <>
-      <h2>Schedule Table</h2>
-      <div style={{ height: "500px", overflowY: "auto" }}>
-        <table style={{ width: `100%`, borderCollapse: `collapse` }}>
-          <thead>
-            <tr>
-              <th style={{ border: `1px solid #ccc`, padding: `10px` }}>
-                Time
-              </th>
-              {dates.map((date) => (
-                <th
-                  key={date}
-                  style={{ border: `1px solid #ccc`, padding: `10px` }}
-                >
-                  {date}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {timeSlots.map((time) => (
-              <tr key={time}>
-                <td style={{ border: `1px solid #ccc`, padding: `10px` }}>
-                  {time}
-                </td>
-                {dates.map((date) => {
-                  const cellData = groupedData[date]?.[time];
-                  const busyPercentage =
-                    cellData && groupSize > 0
-                      ? Math.round((cellData.busyCount / groupSize) * 100)
-                      : 0;
-                  const cellColor = calculateColor(busyPercentage);
-                  return (
-                    <td
-                      key={date}
-                      style={{
-                        border: `1px solid #ccc`,
-                        padding: `10px`,
-                        backgroundColor: cellColor,
-                        color: "black",
-                      }}
-                    >
-                      {busyPercentage}%
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="relative w-full border rounded-md">
+          <ScrollArea className="h-[500px]">
+            <div className="w-full pr-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="sticky top-0 bg-background font-bold border-r">Time</TableHead>
+                    {dates.map((date, index) => (
+                      <TableHead 
+                        key={date} 
+                        className={`sticky top-0 bg-background font-bold ${index !== dates.length - 1 ? 'border-r' : ''}`}
+                      >
+                        {date}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {timeSlots.map((time) => (
+                    <TableRow key={time}>
+                      <TableCell className="font-medium border-r">{time}</TableCell>
+                      {dates.map((date, index) => {
+                        const cellData = groupedData[date]?.[time];
+                        const busyPercentage =
+                          cellData && groupSize > 0
+                            ? Math.round((cellData.busyCount / groupSize) * 100)
+                            : 0;
+                        const cellColor = calculateColor(busyPercentage);
+                        const busyPeople = cellData?.names || [];
+                        
+                        return (
+                          <Tooltip key={date}>
+                            <TooltipTrigger asChild>
+                              <TableCell
+                                style={{ backgroundColor: cellColor }}
+                                className={`text-center text-black cursor-default ${index !== dates.length - 1 ? 'border-r' : ''}`}
+                              >
+                                {busyPercentage}%
+                              </TableCell>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-zinc-900 text-white border-zinc-800">
+                              {busyPeople.length > 0 ? (
+                                <div>
+                                  <p className="font-semibold">Busy:</p>
+                                  <ul className="list-disc pl-4">
+                                    {busyPeople.map((name, index) => (
+                                      <li key={index}>{name}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : (
+                                <p>Everyone is available</p>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </ScrollArea>
+        </div>
+        <div className="space-y-6 py-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Start Time: {startTime}:00
+            </label>
+            <Slider
+              value={[startTime]}
+              min={0}
+              max={23}
+              step={1}
+              onValueChange={handleStartTimeChange}
+              className="w-[60%]"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              End Time: {endTime}:00
+            </label>
+            <Slider
+              value={[endTime]}
+              min={1}
+              max={24}
+              step={1}
+              onValueChange={handleEndTimeChange}
+              className="w-[60%]"
+            />
+          </div>
+        </div>
       </div>
-      <label>
-        Start Time:
-        <input
-          type="number"
-          value={startTime}
-          onChange={(e) => setStartTime(parseInt(e.target.value, 10))}
-        />
-      </label>
-      <label>
-        End Time:
-        <input
-          type="number"
-          value={endTime}
-          onChange={(e) => setEndTime(parseInt(e.target.value, 10))}
-        />
-      </label>
-    </>
+    </TooltipProvider>
   );
 };
 
