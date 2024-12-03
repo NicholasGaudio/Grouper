@@ -4,5 +4,6 @@ typing
 google.oauth2
 google.auth.transport
 httpx
-
+cryptography
+cryptography.fernet
 

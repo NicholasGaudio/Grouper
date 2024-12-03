@@ -4,15 +4,18 @@ import os.path
 from env import CLIENT_ID, CLIENT_SECRET
 import requests
 from datetime import datetime, timedelta
-
+from encryption import decrypt
 # Events Lists item
 # (start, end, owner), 
 # Convert strings to datetime objects
 def convert_event_format(event, name):
     # Parse the start and end times
-    start_str = event["start"]["dateTime"]
-    end_str = event["end"]["dateTime"]
-    
+    if "dateTime" in event["start"] and "dateTime" in event["end"]:
+        start_str = event["start"]["dateTime"]
+        end_str = event["end"]["dateTime"]
+    else: # Check for all day event which exists... apparently
+        start_str = event["start"]["date"] + "T00:00:00Z"
+        end_str = event["end"]["date"] + "T00:00:00Z"
     # Convert strings to datetime objects
     start = datetime.fromisoformat(start_str)
     end = datetime.fromisoformat(end_str)
@@ -70,8 +73,8 @@ def find_availability_timeline(events_lists):
 # Takes in a User (json)
 # Calls Google Calendar API
 async def call_calendar_API(user):
-    access_token = user.get("access_token")
-    refresh_token = user.get("refresh_token")
+    access_token = decrypt(user.get("access_token"))
+    refresh_token = decrypt(user.get("refresh_token"))
 
     if not access_token or not refresh_token:
         raise ValueError("Missing access token or refresh token")
@@ -125,6 +128,8 @@ async def call_calendar_API(user):
     if response.status_code == 200:
         events = response.json().get("items", [])
 
+        print("EVENTS HERE!")
+        print(events)
         return events
     else:
         raise Exception(f"Failed to fetch events: {response.text}")
