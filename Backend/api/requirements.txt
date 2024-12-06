@@ -7,6 +7,7 @@ google-api-core
 google-auth-oauthlib
 google-api-python-client 
 googleapis-common-protos
+google-auth-httplib2
 cryptography
 cryptography.fernet
 
