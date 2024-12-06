@@ -9,6 +9,7 @@ from pydantic import BaseModel, BeforeValidator, Field, ConfigDict
 from auth.user_creation import handle_id_token
 from datetime import datetime, timedelta
 from algorithm import *
+from encryption import *
 import requests
 import json
 import httpx
@@ -188,7 +189,6 @@ async def get_merged_calendar(group_id: str):
             status_code=400, 
             detail="No users with valid access tokens found in this group"
         )
-        
     return await algorithm_process_users(users)
 
 # Functions to Create (users/groups)
@@ -239,30 +239,29 @@ async def auth_callback(request: FastAPI_Request):
     # Response data with access_token, refresh_token, id_token
     response_data = response.json()
 
-    # Retrieve public user info that can be returned back to the front end
-    public_user_info = handle_id_token(response_data["id_token"])
-
     # Retrieve private user info that is stored but not returned to the front end
     if "access_token" not in response_data or "refresh_token" not in response_data:
         raise HTTPException(status_code=500, detail="Failed to retrieve tokens from Google")
     
+    # Retrieve public user info that can be returned back to the front end
+    public_user_info = handle_id_token(response_data["id_token"])
     all_user_info = public_user_info
-    all_user_info["access_token"] = response_data["access_token"]
-    all_user_info["refresh_token"] = response_data["refresh_token"]
 
-    #TODO -- Encrypt tokens
+    all_user_info["access_token"] = encrypt(response_data["access_token"])
+    all_user_info["refresh_token"] = encrypt(response_data["refresh_token"])
+
     model = UserModel(**all_user_info)
 
     if public_user_info:
         # first, check if the user is already in the database via email
         user = await userCollection.find_one({"email": public_user_info["email"]})
-        print(user)
+
         if not user:
             user = await addUser(model)
 
             public_user_info["new_user"] = True
         else:
-            await update_user(user["_id"], model)
+            await update_user((str(user.get("_id"))), model)
             public_user_info["new_user"] = False
 
     return RedirectResponse(url=f"https://localhost:3000/home?uid={str(user['_id'])}")
@@ -349,7 +348,6 @@ async def invite_group(invite_data: InviteRequest):
 
 @app.put("/update/{user_id}", response_description="Update user info")
 async def update_user(user_id: str, user: UserModel):
-
     try:
         user_id_obj = ObjectId(user_id)
     except Exception as e:
@@ -360,9 +358,6 @@ async def update_user(user_id: str, user: UserModel):
         raise HTTPException(status_code=404, detail="User not found")
 
     updated_data = user.dict(exclude_unset=True, by_alias=True)
-    
-    updated_data.pop('access_token', None)
-    updated_data.pop('refresh_token', None)
 
     result = await userCollection.update_one(
         {"_id": user_id_obj},
